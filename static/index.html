@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StyleBot — Sign In</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-track">
+      <span>👗</span><span>👠</span><span>👜</span><span>💄</span>
+      <span>👒</span><span>🕶️</span><span>💍</span><span>🧣</span>
+      <span>👗</span><span>👠</span><span>👜</span><span>💄</span>
+      <span>👒</span><span>🕶️</span><span>💍</span><span>🧣</span>
+    </div>
+  </aside>
+
+  <div id="auth-container">
+    <div class="auth-logo">
+      <h1>StyleBot <span class="version">v.2</span></h1>
+      <p>Your personal AI fashion advisor</p>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="showTab('login')">Sign in</button>
+      <button class="auth-tab" id="tab-register" onclick="showTab('register')">Create account</button>
+    </div>
+
+    <!-- Login form -->
+    <form class="auth-form" id="form-login">
+      <input type="text" id="login-username" placeholder="Username" autocomplete="username" required />
+      <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required />
+      <p class="auth-error" id="login-error"></p>
+      <button type="submit">Sign in</button>
+    </form>
+
+    <!-- Register form -->
+    <form class="auth-form" id="form-register" style="display:none">
+      <input type="text" id="reg-username" placeholder="Choose a username" autocomplete="username" required />
+      <input type="password" id="reg-password" placeholder="Choose a password (6+ chars)" autocomplete="new-password" required />
+      <p class="auth-error" id="reg-error"></p>
+      <button type="submit">Create account</button>
+    </form>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-track">
+      <span>✨</span><span>🧥</span><span>👟</span><span>💎</span>
+      <span>🪞</span><span>🎀</span><span>👔</span><span>🌸</span>
+      <span>✨</span><span>🧥</span><span>👟</span><span>💎</span>
+      <span>🪞</span><span>🎀</span><span>👔</span><span>🌸</span>
+    </div>
+  </aside>
+
+  <script src="auth.js"></script>
+</body>
+</html>

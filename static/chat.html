@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StyleBot</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-track">
+      <span>👗</span><span>👠</span><span>👜</span><span>💄</span>
+      <span>👒</span><span>🕶️</span><span>💍</span><span>🧣</span>
+      <span>👗</span><span>👠</span><span>👜</span><span>💄</span>
+      <span>👒</span><span>🕶️</span><span>💍</span><span>🧣</span>
+    </div>
+  </aside>
+
+  <div id="app">
+    <header>
+      <h1>StyleBot <span class="version">v.2</span></h1>
+      <p class="subtitle">Your personal fashion advisor</p>
+      <button id="logout-btn">Sign out</button>
+    </header>
+
+    <div id="messages">
+      <div class="message assistant">
+        <div class="bubble">Hi! I'm StyleBot. Tell me what you're dressing for, ask for outfit ideas, or let me help you find something to buy.</div>
+      </div>
+    </div>
+
+    <form id="chat-form">
+      <textarea
+        id="input"
+        placeholder="Ask about outfits, style tips, or what to wear..."
+        rows="1"
+      ></textarea>
+      <button type="submit" id="send-btn">Send</button>
+    </form>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-track">
+      <span>✨</span><span>🧥</span><span>👟</span><span>💎</span>
+      <span>🪞</span><span>🎀</span><span>👔</span><span>🌸</span>
+      <span>✨</span><span>🧥</span><span>👟</span><span>💎</span>
+      <span>🪞</span><span>🎀</span><span>👔</span><span>🌸</span>
+    </div>
+  </aside>
+
+  <script src="app.js"></script>
+</body>
+</html>
