@@ -20,21 +20,20 @@ def set_recent_search_products(products: list[dict]) -> None:
     _recent_search_products = list(products)
 
 
-def _enrich_from_recent_search(item_name: str, products: list[dict] | None = None) -> dict | None:
-    """Fuzzy-match item_name against recent search products and return image_url + item_url."""
-    search_list = products if products is not None else _recent_search_products
-    if not search_list or not item_name:
+def _fuzzy_match_products(item_name: str, products: list[dict]) -> dict | None:
+    """Fuzzy-match item_name against a product list and return the best match."""
+    if not products or not item_name:
         return None
 
     name_lower = item_name.lower().strip()
 
     # Exact title match first
-    for p in search_list:
+    for p in products:
         if p.get("title", "").lower().strip() == name_lower:
             return {"image_url": p.get("image_url", ""), "item_url": p.get("item_url", "")}
 
     # Substring match (item name in title or title in item name)
-    for p in search_list:
+    for p in products:
         title_lower = p.get("title", "").lower().strip()
         if name_lower in title_lower or title_lower in name_lower:
             return {"image_url": p.get("image_url", ""), "item_url": p.get("item_url", "")}
@@ -43,7 +42,7 @@ def _enrich_from_recent_search(item_name: str, products: list[dict] | None = Non
     name_words = set(name_lower.split())
     best_match = None
     best_overlap = 0
-    for p in search_list:
+    for p in products:
         title_words = set(p.get("title", "").lower().split())
         overlap = len(name_words & title_words)
         if overlap > best_overlap and overlap >= len(name_words) * 0.5:
@@ -54,6 +53,40 @@ def _enrich_from_recent_search(item_name: str, products: list[dict] | None = Non
         return {"image_url": best_match.get("image_url", ""), "item_url": best_match.get("item_url", "")}
 
     return None
+
+
+def _enrich_from_recent_search(item_name: str, products: list[dict] | None = None) -> dict | None:
+    """Fuzzy-match item_name against recent search products and return image_url + item_url."""
+    search_list = products if products is not None else _recent_search_products
+    return _fuzzy_match_products(item_name, search_list)
+
+
+def _enrich_from_conversation_history(user_id: int, item_name: str, db) -> dict | None:
+    """Fallback: search stored conversation meta records for product image URLs.
+
+    This handles the case where the in-memory buffer is empty (e.g. server restart)
+    but the user is referencing a product from a previous search.
+    """
+    try:
+        rows = db.execute(
+            "SELECT content FROM conversations WHERE user_id = ? AND role = 'meta' ORDER BY id DESC LIMIT 10",
+            (user_id,),
+        ).fetchall()
+    except Exception:
+        return None
+
+    all_products = []
+    for row in rows:
+        try:
+            meta = json.loads(row["content"])
+            if isinstance(meta, list):
+                for block in meta:
+                    if isinstance(block, dict) and block.get("type") == "products":
+                        all_products.extend(block.get("products", []))
+        except Exception:
+            continue
+
+    return _fuzzy_match_products(item_name, all_products)
 
 
 def dispatch_tool(tool_name: str, tool_input: dict, user_id: int, db) -> str:
@@ -137,6 +170,9 @@ def _add_to_wardrobe(user_id: int, tool_input: dict, db) -> str:
     # Auto-enrich from recent search results if Claude didn't pass image/purchase URLs
     if not image_url:
         match = _enrich_from_recent_search(name)
+        # Fallback: check stored conversation history (survives server restarts)
+        if not match:
+            match = _enrich_from_conversation_history(user_id, name, db)
         if match:
             image_url = match.get("image_url") or image_url
             purchase_url = purchase_url or match.get("item_url")

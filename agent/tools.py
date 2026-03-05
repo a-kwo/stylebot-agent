@@ -87,7 +87,9 @@ TOOLS = [
         "name": "add_to_wardrobe",
         "description": (
             "Save an item to the user's wardrobe. Use this when the user mentions they own something, "
-            "or when they confirm purchasing a product."
+            "or when they confirm purchasing a product. "
+            "You MUST always pass image_url when available — especially for items from search results. "
+            "Without image_url the wardrobe card shows a blank placeholder instead of the product image."
         ),
         "input_schema": {
             "type": "object",

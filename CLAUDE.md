@@ -43,6 +43,10 @@ uvicorn main:app --reload
 - `app.js` — Chat rendering, `authFetch()`, product card blocks
 - `style.css` — Shared styles; reuses sidebar emoji strip from v1
 
+## Development workflow
+
+- **Test-driven fixes**: When fixing bugs or implementing requested changes, always write tests first that reproduce the issue (and confirm they fail), then implement the fix to make the tests pass.
+
 ## Key conventions
 
 - **Model**: `claude-sonnet-4-6` (defined in `agent/loop.py`)

@@ -8,7 +8,7 @@ QUIZ_QUESTIONS = {
             {
                 "id": "everyday-minimalist",
                 "label": "Clean & Minimal",
-                "image_url": "https://images.unsplash.com/photo-1507680434567-5739c80be1ac?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1666358085605-b3b717d5a210?w=400&h=400&fit=crop",
                 "style_tags": ["minimalist", "timeless"],
             },
             {
@@ -20,13 +20,13 @@ QUIZ_QUESTIONS = {
             {
                 "id": "everyday-classic",
                 "label": "Classic & Polished",
-                "image_url": "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1667243142746-deb10f212300?w=400&h=400&fit=crop",
                 "style_tags": ["classic", "polished"],
             },
             {
                 "id": "everyday-bohemian",
                 "label": "Boho Relaxed",
-                "image_url": "https://images.unsplash.com/photo-1479064555552-3ef4979f8908?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1718737654958-9b49716693bb?w=400&h=400&fit=crop",
                 "style_tags": ["bohemian", "relaxed"],
             },
         ],
@@ -43,19 +43,19 @@ QUIZ_QUESTIONS = {
             {
                 "id": "weekend-vintage",
                 "label": "Vintage Finds",
-                "image_url": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1593458778871-3c08120770e4?w=400&h=400&fit=crop",
                 "style_tags": ["vintage", "retro"],
             },
             {
                 "id": "weekend-smart",
                 "label": "Effortless Smart",
-                "image_url": "https://images.unsplash.com/photo-1550246140-29f40b909e5a?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1588189408846-30ad110a0f4c?w=400&h=400&fit=crop",
                 "style_tags": ["smart-casual", "refined"],
             },
             {
                 "id": "weekend-edgy",
                 "label": "Edgy Layers",
-                "image_url": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1608680480325-d3ec3cdf7e60?w=400&h=400&fit=crop",
                 "style_tags": ["edgy", "bold"],
             },
         ],
@@ -66,13 +66,13 @@ QUIZ_QUESTIONS = {
             {
                 "id": "goingout-sleek",
                 "label": "Sleek & Dark",
-                "image_url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1593032470861-4509830938cb?w=400&h=400&fit=crop",
                 "style_tags": ["minimalist", "sophisticated"],
             },
             {
                 "id": "goingout-streetlux",
                 "label": "Street Luxe",
-                "image_url": "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1556766129-37f0e1e17847?w=400&h=400&fit=crop",
                 "style_tags": ["streetwear", "bold"],
             },
             {
@@ -113,7 +113,7 @@ QUIZ_QUESTIONS = {
             {
                 "id": "date-bohemian",
                 "label": "Romantic Boho",
-                "image_url": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1725114028309-3b6b4aed3278?w=400&h=400&fit=crop",
                 "style_tags": ["bohemian", "chic"],
             },
         ],
@@ -142,7 +142,7 @@ QUIZ_QUESTIONS = {
             {
                 "id": "summer-boho",
                 "label": "Festival Ready",
-                "image_url": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1647211102988-0571f7440219?w=400&h=400&fit=crop",
                 "style_tags": ["bohemian", "adventurous"],
             },
         ],
@@ -153,7 +153,7 @@ QUIZ_QUESTIONS = {
             {
                 "id": "winter-minimalist",
                 "label": "Sleek Layers",
-                "image_url": "https://images.unsplash.com/photo-1611312449408-fcece27cdbb7?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1709614268006-96be7984bf05?w=400&h=400&fit=crop",
                 "style_tags": ["minimalist", "polished"],
             },
             {
@@ -165,13 +165,13 @@ QUIZ_QUESTIONS = {
             {
                 "id": "winter-classic",
                 "label": "Tailored Overcoat",
-                "image_url": "https://images.unsplash.com/photo-1551537482-f2075a1d41f2?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1592878849122-facb97520f9e?w=400&h=400&fit=crop",
                 "style_tags": ["classic", "refined"],
             },
             {
                 "id": "winter-rugged",
                 "label": "Rugged Outdoors",
-                "image_url": "https://images.unsplash.com/photo-1548883354-7622d03aca27?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1646061392496-bacaa3fe68a8?w=400&h=400&fit=crop",
                 "style_tags": ["rugged", "athleisure"],
             },
         ],
@@ -182,25 +182,25 @@ QUIZ_QUESTIONS = {
             {
                 "id": "work-classic",
                 "label": "Sharp Tailoring",
-                "image_url": "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1763598461615-610264129bea?w=400&h=400&fit=crop",
                 "style_tags": ["classic", "professional"],
             },
             {
                 "id": "work-smart-casual",
                 "label": "Smart Casual",
-                "image_url": "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1723277171985-07c20f1876e1?w=400&h=400&fit=crop",
                 "style_tags": ["smart-casual", "modern"],
             },
             {
                 "id": "work-creative",
                 "label": "Creative Office",
-                "image_url": "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1696960181436-1b6d9576354e?w=400&h=400&fit=crop",
                 "style_tags": ["edgy", "artsy"],
             },
             {
                 "id": "work-minimal",
                 "label": "Clean & Understated",
-                "image_url": "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1708295923811-9b025f4f5fcc?w=400&h=400&fit=crop",
                 "style_tags": ["minimalist", "timeless"],
             },
         ],
@@ -211,25 +211,25 @@ QUIZ_QUESTIONS = {
             {
                 "id": "dream-avant-garde",
                 "label": "Avant-Garde",
-                "image_url": "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1568936829638-715cab9b5142?w=400&h=400&fit=crop",
                 "style_tags": ["edgy", "bold"],
             },
             {
                 "id": "dream-vintage",
                 "label": "Curated Vintage",
-                "image_url": "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1681377629414-cc21664505f1?w=400&h=400&fit=crop",
                 "style_tags": ["vintage", "sophisticated"],
             },
             {
                 "id": "dream-classic",
                 "label": "Timeless Luxury",
-                "image_url": "https://images.unsplash.com/photo-1638247025967-b4e38f787b76?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1614416943242-9e18ce1ea19b?w=400&h=400&fit=crop",
                 "style_tags": ["classic", "elegant"],
             },
             {
                 "id": "dream-streetwear",
                 "label": "Hype Collection",
-                "image_url": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1765560217763-aaa285ffd313?w=400&h=400&fit=crop",
                 "style_tags": ["streetwear", "urban"],
             },
         ],
@@ -247,7 +247,7 @@ QUIZ_QUESTIONS = {
             {
                 "id": "high-tops",
                 "label": "High Tops",
-                "image_url": "https://images.unsplash.com/photo-1607522370275-f14206abe5d3?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1446214814726-e6074845b4ce?w=400&h=400&fit=crop",
                 "style_tags": ["streetwear", "bold"],
             },
             {
@@ -259,7 +259,7 @@ QUIZ_QUESTIONS = {
             {
                 "id": "designer-sneaker",
                 "label": "Designer Sneaker",
-                "image_url": "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1593032470861-4509830938cb?w=400&h=400&fit=crop",
                 "style_tags": ["luxury", "statement"],
             },
         ],
@@ -282,7 +282,7 @@ QUIZ_QUESTIONS = {
             {
                 "id": "relaxed-formal",
                 "label": "Relaxed Formal",
-                "image_url": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?w=400&h=400&fit=crop",
                 "style_tags": ["relaxed", "smart-casual"],
             },
             {
@@ -299,7 +299,7 @@ QUIZ_QUESTIONS = {
             {
                 "id": "stripes",
                 "label": "Stripes",
-                "image_url": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1621951753163-ee63e7fc147e?w=400&h=400&fit=crop",
                 "style_tags": ["classic", "nautical"],
             },
             {
@@ -311,13 +311,13 @@ QUIZ_QUESTIONS = {
             {
                 "id": "floral",
                 "label": "Floral",
-                "image_url": "https://images.unsplash.com/photo-1490114538077-0a7f8cb49891?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1575062258018-37b8821ce9b7?w=400&h=400&fit=crop",
                 "style_tags": ["bohemian", "expressive"],
             },
             {
                 "id": "solid",
                 "label": "Solid Colors",
-                "image_url": "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1592878858320-cec76c56da82?w=400&h=400&fit=crop",
                 "style_tags": ["minimalist", "versatile"],
             },
         ],
@@ -346,7 +346,7 @@ QUIZ_QUESTIONS = {
             {
                 "id": "layered-jewelry",
                 "label": "Layered Jewelry",
-                "image_url": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1738754835779-cae7fb8907a2?w=400&h=400&fit=crop",
                 "style_tags": ["bohemian", "expressive"],
             },
         ],
@@ -363,13 +363,13 @@ QUIZ_QUESTIONS = {
             {
                 "id": "maxi-dress",
                 "label": "Maxi Dress",
-                "image_url": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1738261544450-dac9cc4e5631?w=400&h=400&fit=crop",
                 "style_tags": ["bohemian", "flowy"],
             },
             {
                 "id": "shirt-dress",
                 "label": "Shirt Dress",
-                "image_url": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?w=400&h=400&fit=crop",
                 "style_tags": ["smart-casual", "versatile"],
             },
             {
@@ -386,7 +386,7 @@ QUIZ_QUESTIONS = {
             {
                 "id": "matching-set",
                 "label": "Matching Set",
-                "image_url": "https://images.unsplash.com/photo-1518459031867-a89b944bffe4?w=400&h=400&fit=crop",
+                "image_url": "https://images.unsplash.com/photo-1592878798022-3be8fcd44b1b?w=400&h=400&fit=crop",
                 "style_tags": ["put-together", "trendy"],
             },
             {

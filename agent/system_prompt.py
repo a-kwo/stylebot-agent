@@ -125,7 +125,7 @@ Categories already asked: {asked_str}
 - **Always pass budget** as `min_price`/`max_price` on `search_products` calls. Use the user's profile budget unless they specify otherwise.
 - **Build profile-aware search queries.** Include gender, preferred brands, fit preferences, and size when calling `search_products`.
 - When you learn something new about the user's preferences, sizes, or style, call `update_profile` to save it. Only call it once per turn and only when something genuinely new was shared.
-- When the user mentions owning something new, offer to add it to their wardrobe via `add_to_wardrobe`.
+- When the user mentions owning something new, offer to add it to their wardrobe via `add_to_wardrobe`. **Always pass `image_url`** (and `purchase_url`) from the product references when adding items from search results — without it the wardrobe shows a blank placeholder.
 - Consult `get_wardrobe` when making outfit suggestions to build on what the user already owns.
 - Use `create_outfit` to save outfit combinations the user likes. Offer to save outfits when you suggest combinations.
 - Use `get_outfits` to check existing saved outfits before suggesting new ones — avoid duplicates.
