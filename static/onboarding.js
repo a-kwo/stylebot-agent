@@ -67,19 +67,20 @@ document.getElementById("onboard-form").addEventListener("submit", async (e) => 
 
 // ── Phase 2: Image quiz ───────────────────────────────────────
 
-let quizQuestions = [];
-let currentQuestionIdx = 0;
+let quizTree = {};       // { start: "root_m", nodes: { ... } }
+let currentNodeId = null;
+let questionNumber = 0;
 let quizAnswers = [];
 let selectedOption = null;
 
 async function startQuizPhase() {
-  // Show the quiz overlay (covers the whole page)
   document.getElementById("quiz-overlay").classList.add("active");
 
-  // Fetch questions
   try {
     const res = await authFetch("/api/quiz/onboarding");
-    quizQuestions = await res.json();
+    quizTree = await res.json();
+    currentNodeId = quizTree.start;
+    questionNumber = 0;
     renderQuestion();
   } catch (err) {
     // Fallback: skip quiz, go to chat
@@ -88,10 +89,14 @@ async function startQuizPhase() {
 }
 
 function renderQuestion() {
-  const q = quizQuestions[currentQuestionIdx];
+  const q = quizTree.nodes[currentNodeId];
+  if (!q) {
+    finishQuiz();
+    return;
+  }
 
-  document.getElementById("quiz-progress").textContent =
-    `Question ${currentQuestionIdx + 1} of ${quizQuestions.length}`;
+  questionNumber++;
+  document.getElementById("quiz-progress").textContent = `Question ${questionNumber}`;
   document.getElementById("quiz-prompt").textContent = q.prompt;
 
   const grid = document.getElementById("quiz-grid");
@@ -123,7 +128,6 @@ function renderQuestion() {
 }
 
 function selectCard(card, option) {
-  // Deselect previous
   document.querySelectorAll(".quiz-card.selected").forEach((c) => c.classList.remove("selected"));
   card.classList.add("selected");
   selectedOption = option;
@@ -133,16 +137,16 @@ function selectCard(card, option) {
 document.getElementById("quiz-next-btn").addEventListener("click", async () => {
   if (!selectedOption) return;
 
-  const q = quizQuestions[currentQuestionIdx];
   quizAnswers.push({
-    category: q.category,
+    category: currentNodeId,
     choice: selectedOption.id,
     style_tags: selectedOption.style_tags,
   });
 
-  currentQuestionIdx++;
+  const nextNodeId = selectedOption.next;
 
-  if (currentQuestionIdx < quizQuestions.length) {
+  if (nextNodeId && quizTree.nodes[nextNodeId]) {
+    currentNodeId = nextNodeId;
     renderQuestion();
   } else {
     await finishQuiz();

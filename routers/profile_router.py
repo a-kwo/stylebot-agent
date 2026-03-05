@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from database import get_db
 from auth import get_current_user
-from services.quiz_service import get_onboarding_questions
+from services.quiz_service import get_quiz_tree, get_chat_question
 from services.profile_service import update_profile
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
@@ -67,8 +67,10 @@ def onboard(body: OnboardRequest, user_id: int = Depends(get_current_user), db=D
 
 
 @quiz_router.get("/onboarding")
-def quiz_onboarding():
-    return get_onboarding_questions()
+def quiz_onboarding(user_id: int = Depends(get_current_user), db=Depends(get_db)):
+    row = db.execute("SELECT gender FROM profiles WHERE user_id = ?", (user_id,)).fetchone()
+    gender = row["gender"] if row else None
+    return get_quiz_tree(gender)
 
 
 @router.post("/style-quiz")
