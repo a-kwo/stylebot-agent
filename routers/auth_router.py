@@ -6,7 +6,7 @@ from database import get_db
 from auth import hash_password, verify_password, create_access_token
 from models import RegisterRequest, LoginRequest, TokenResponse
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=TokenResponse, status_code=201)

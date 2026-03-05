@@ -5,9 +5,35 @@ DB_PATH = Path(__file__).parent / "stylebot.db"
 
 
 def get_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")
     return conn
+
+
+def _migrate_profiles(conn):
+    """Add new columns to existing profiles table (safe to re-run)."""
+    new_columns = [
+        ("gender", "TEXT"),
+        ("age", "INTEGER"),
+        ("climate", "TEXT"),
+        ("onboarded", "INTEGER DEFAULT 0"),
+        ("style_quiz", "TEXT DEFAULT '[]'"),
+    ]
+    for col_name, col_type in new_columns:
+        try:
+            conn.execute(f"ALTER TABLE profiles ADD COLUMN {col_name} {col_type}")
+        except Exception:
+            pass  # column already exists
+
+
+def _migrate_wardrobe(conn):
+    """Add local_image_path column to wardrobe table (safe to re-run)."""
+    try:
+        conn.execute("ALTER TABLE wardrobe ADD COLUMN local_image_path TEXT")
+    except Exception:
+        pass  # column already exists
 
 
 def init_db():
@@ -35,6 +61,11 @@ def init_db():
             occasions         TEXT DEFAULT '[]',
             fit_preferences   TEXT DEFAULT '[]',
             notes             TEXT DEFAULT '',
+            gender            TEXT,
+            age               INTEGER,
+            climate           TEXT,
+            onboarded         INTEGER DEFAULT 0,
+            style_quiz        TEXT DEFAULT '[]',
             updated_at        TEXT DEFAULT (datetime('now'))
         );
 
@@ -59,7 +90,44 @@ def init_db():
             content    TEXT NOT NULL,
             created_at TEXT DEFAULT (datetime('now'))
         );
+
+        CREATE TABLE IF NOT EXISTS recommendation_feedback (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id       INTEGER NOT NULL REFERENCES users(id),
+            product_title TEXT NOT NULL,
+            feedback      TEXT NOT NULL,
+            created_at    TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS conversation_summaries (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id         INTEGER NOT NULL REFERENCES users(id),
+            summary         TEXT NOT NULL,
+            messages_up_to  INTEGER NOT NULL,
+            created_at      TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS outfits (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id    INTEGER NOT NULL REFERENCES users(id),
+            name       TEXT NOT NULL,
+            occasion   TEXT,
+            season     TEXT,
+            notes      TEXT DEFAULT '',
+            image_url  TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS outfit_items (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            outfit_id   INTEGER NOT NULL REFERENCES outfits(id) ON DELETE CASCADE,
+            wardrobe_id INTEGER NOT NULL REFERENCES wardrobe(id),
+            layer_order INTEGER DEFAULT 0
+        );
     """)
+    conn.commit()
+    _migrate_profiles(conn)
+    _migrate_wardrobe(conn)
     conn.commit()
     conn.close()
 

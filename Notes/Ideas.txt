@@ -1,0 +1,7 @@
+Front end: 
+Ask gender, age, climate of location, etc 
+These questions should result in different style preference questions being asked
+Series of questions that asks the user for style preferences. (3 images of 3 different shirts, which one you like the best)
+Pictures instead of questions that ask “do you like x style?”
+Repeat questions for pants, hoodies, etc.
+Difference with GPT (prompted with images, instead of questions) 

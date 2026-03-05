@@ -22,3 +22,16 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Claude Code
+.claude/
+
+# Playwright MCP logs
+.playwright-mcp/
+
+# Debug screenshots
+*.png
+
+# Next.js build output
+frontend/.next/
+frontend/node_modules/

@@ -1,11 +1,25 @@
 import json
 from datetime import date
 
+WEIGHTED_FIELDS = ["style_adjectives"]
 ARRAY_FIELDS = [
-    "style_adjectives", "preferred_colors", "avoided_colors",
+    "preferred_colors", "avoided_colors",
     "preferred_brands", "avoided_brands", "occasions", "fit_preferences",
 ]
 SCALAR_FIELDS = ["size_tops", "size_bottoms", "size_shoes", "budget_min", "budget_max"]
+
+
+def _migrate_weighted(raw: str) -> dict:
+    """Auto-migrate old array format to weighted dict format."""
+    try:
+        data = json.loads(raw or "[]")
+    except Exception:
+        return {}
+    if isinstance(data, list):
+        return {v: 1 for v in data}
+    if isinstance(data, dict):
+        return data
+    return {}
 
 
 def get_profile(user_id: int, db) -> dict:
@@ -14,6 +28,8 @@ def get_profile(user_id: int, db) -> dict:
         return {}
 
     profile = dict(row)
+    for field in WEIGHTED_FIELDS:
+        profile[field] = _migrate_weighted(profile.get(field) or "[]")
     for field in ARRAY_FIELDS:
         try:
             profile[field] = json.loads(profile.get(field) or "[]")
@@ -27,6 +43,18 @@ def update_profile(user_id: int, updates: dict, db) -> dict:
 
     set_clauses = []
     params = []
+
+    # Weighted fields: increment weights instead of union-append
+    for field in WEIGHTED_FIELDS:
+        if field in updates and updates[field]:
+            current_weights = current.get(field, {})
+            if not isinstance(current_weights, dict):
+                current_weights = _migrate_weighted(json.dumps(current_weights))
+            new_vals = updates[field] if isinstance(updates[field], list) else list(updates[field])
+            for v in new_vals:
+                current_weights[v] = current_weights.get(v, 0) + 1
+            set_clauses.append(f"{field} = ?")
+            params.append(json.dumps(current_weights))
 
     for field in ARRAY_FIELDS:
         if field in updates and updates[field]:

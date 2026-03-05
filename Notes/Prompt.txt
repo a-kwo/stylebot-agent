@@ -1,0 +1,10 @@
+Prompt: I want to modify the onboarding quiz. Instead of asking for user preferences of clothes for different categories,
+   let's change it to images of full outfits that capture distinctive styles. Based on those outfit preferences,
+  stylebot should curate suggestions. Make comprehensive tests to ensure that the onboarding quiz works as
+  intended. Make sure it fails for now. Then implement the changes necessary.
+
+Claude Response: User answered Claude's questions:
+  ⎿  · For the new outfit-based quiz, how many outfit options should users pick from? And should they select
+     multiple favorites or just one per question? → 4 outfits, pick 1
+     · How many outfit questions should there be in total? → 8 questions
+     · What style archetypes should the outfit images represent? → Use suggested defaults

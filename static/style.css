@@ -263,6 +263,39 @@ header .subtitle {
 
 .product-card .card-buy:hover { background: #333; }
 
+/* Feedback buttons */
+.card-feedback {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.feedback-btn {
+  flex: 1;
+  padding: 5px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.feedback-btn:hover {
+  border-color: #bbb;
+  background: #f5f5f5;
+}
+
+.feedback-btn.like.active {
+  border-color: #4caf50;
+  background: #e8f5e9;
+}
+
+.feedback-btn.dislike.active {
+  border-color: #e53935;
+  background: #ffebee;
+}
+
 /* ── Chat form ────────────────────────────────────────────── */
 #chat-form {
   display: flex;
@@ -403,4 +436,152 @@ header .subtitle {
   font-size: 0.85rem;
   text-align: center;
   min-height: 1.2em;
+}
+
+/* ── Quiz cards (onboarding + in-chat) ───────────────────────── */
+
+/* Quiz overlay — escapes the body flex layout entirely */
+#quiz-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  background: #faf9f7;
+  overflow-y: scroll;
+}
+
+#quiz-overlay.active {
+  display: block;
+}
+
+#quiz-overlay .quiz-inner {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 0 16px 60px;
+}
+
+.quiz-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.quiz-progress {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.quiz-prompt {
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  color: #1a1a1a;
+}
+
+.quiz-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.quiz-card {
+  background: #fff;
+  border: 2px solid #e8e8e8;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+
+.quiz-card:hover {
+  border-color: #bbb;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  transform: translateY(-1px);
+}
+
+.quiz-card img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #f0f0f0;
+  display: block;
+}
+
+.quiz-card .quiz-label {
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  color: #1a1a1a;
+}
+
+.quiz-card.selected {
+  border: 3px solid #1a1a1a;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+}
+
+.quiz-card.selected .quiz-label {
+  font-weight: 700;
+}
+
+.quiz-card.disabled {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.quiz-next-btn {
+  padding: 13px;
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-top: 4px;
+}
+
+.quiz-next-btn:hover { background: #333; }
+.quiz-next-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+/* In-chat quiz block */
+.quiz-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.quiz-block .block-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-left: 2px;
+}
+
+.quiz-block .quiz-prompt {
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.quiz-block .quiz-grid {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .quiz-block .quiz-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }

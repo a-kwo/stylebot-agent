@@ -2,6 +2,17 @@
 const token = localStorage.getItem("stylebot_token");
 if (!token) location.replace("/");
 
+// Guard: redirect to onboarding if not onboarded
+(async () => {
+  try {
+    const res = await fetch("/api/profile/onboarding-status", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!data.onboarded) location.replace("/onboarding.html");
+  } catch {}
+})();
+
 const messagesEl = document.getElementById("messages");
 const form = document.getElementById("chat-form");
 const input = document.getElementById("input");
@@ -67,6 +78,8 @@ function renderResponseBlocks(blocks) {
       messagesEl.appendChild(wrap);
     } else if (block.type === "products" && block.items?.length) {
       messagesEl.appendChild(buildProductsBlock(block.items));
+    } else if (block.type === "quiz" && block.quiz) {
+      messagesEl.appendChild(buildQuizBlock(block.quiz));
     }
   }
   scrollBottom();
@@ -151,8 +164,103 @@ function buildProductCard(item) {
     body.appendChild(link);
   }
 
+  // Feedback buttons
+  const feedbackRow = document.createElement("div");
+  feedbackRow.className = "card-feedback";
+
+  const thumbsUp = document.createElement("button");
+  thumbsUp.className = "feedback-btn like";
+  thumbsUp.textContent = "\u{1F44D}";
+  thumbsUp.title = "I like this";
+
+  const thumbsDown = document.createElement("button");
+  thumbsDown.className = "feedback-btn dislike";
+  thumbsDown.textContent = "\u{1F44E}";
+  thumbsDown.title = "Not for me";
+
+  function sendFeedback(feedback, activeBtn, otherBtn) {
+    activeBtn.classList.add("active");
+    otherBtn.classList.remove("active");
+    authFetch("/api/feedback", {
+      method: "POST",
+      body: JSON.stringify({ product_title: item.title, feedback }),
+    }).catch(() => {});
+  }
+
+  thumbsUp.addEventListener("click", () => sendFeedback("like", thumbsUp, thumbsDown));
+  thumbsDown.addEventListener("click", () => sendFeedback("dislike", thumbsDown, thumbsUp));
+
+  feedbackRow.appendChild(thumbsUp);
+  feedbackRow.appendChild(thumbsDown);
+  body.appendChild(feedbackRow);
+
   card.appendChild(body);
   return card;
+}
+
+function buildQuizBlock(quiz) {
+  const wrap = document.createElement("div");
+  wrap.className = "message assistant";
+
+  const container = document.createElement("div");
+  container.className = "quiz-block";
+
+  const label = document.createElement("div");
+  label.className = "block-label";
+  label.textContent = "StyleBot has a question for you";
+  container.appendChild(label);
+
+  const prompt = document.createElement("p");
+  prompt.className = "quiz-prompt";
+  prompt.textContent = quiz.prompt;
+  container.appendChild(prompt);
+
+  const grid = document.createElement("div");
+  grid.className = "quiz-grid";
+
+  for (const opt of quiz.options) {
+    const card = document.createElement("div");
+    card.className = "quiz-card";
+
+    const img = document.createElement("img");
+    img.src = opt.image_url;
+    img.alt = opt.label;
+    img.loading = "lazy";
+    card.appendChild(img);
+
+    const lbl = document.createElement("div");
+    lbl.className = "quiz-label";
+    lbl.textContent = opt.label;
+    card.appendChild(lbl);
+
+    card.addEventListener("click", async () => {
+      // Prevent re-selection
+      grid.querySelectorAll(".quiz-card").forEach((c) => {
+        c.classList.remove("selected");
+        c.classList.add("disabled");
+      });
+      card.classList.add("selected");
+      card.classList.remove("disabled");
+
+      // Post answer
+      try {
+        await authFetch("/api/profile/quiz-answer", {
+          method: "POST",
+          body: JSON.stringify({
+            category: quiz.category,
+            choice: opt.id,
+            style_tags: opt.style_tags,
+          }),
+        });
+      } catch {}
+    });
+
+    grid.appendChild(card);
+  }
+
+  container.appendChild(grid);
+  wrap.appendChild(container);
+  return wrap;
 }
 
 function scrollBottom() {
@@ -163,7 +271,7 @@ function scrollBottom() {
 
 async function loadHistory() {
   try {
-    const res = await authFetch("/conversations");
+    const res = await authFetch("/api/conversations");
     if (!res.ok) return;
     const history = await res.json();
 
@@ -231,7 +339,7 @@ form.addEventListener("submit", async (e) => {
   addThinkingIndicator();
 
   try {
-    const res = await authFetch("/chat", {
+    const res = await authFetch("/api/chat", {
       method: "POST",
       body: JSON.stringify({ message: text }),
     });

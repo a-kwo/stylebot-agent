@@ -107,6 +107,14 @@ TOOLS = [
                     "items": {"type": "string"},
                     "description": "Descriptive tags (e.g. casual, formal, summer, workwear)",
                 },
+                "image_url": {
+                    "type": "string",
+                    "description": "URL of the product image (from search results or user-provided)",
+                },
+                "purchase_url": {
+                    "type": "string",
+                    "description": "URL where the product can be purchased",
+                },
             },
             "required": ["name", "category"],
         },
@@ -136,6 +144,142 @@ TOOLS = [
                 },
             },
             "required": ["query"],
+        },
+    },
+    {
+        "name": "create_outfit",
+        "description": (
+            "Create a new outfit from the user's wardrobe items. Use this when the user asks "
+            "you to put together an outfit or save a combination of items they like."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "A descriptive name for the outfit (e.g. 'Casual Friday', 'Date Night Look')",
+                },
+                "occasion": {
+                    "type": "string",
+                    "description": "When this outfit is for (e.g. work, casual, date, formal, gym)",
+                },
+                "season": {
+                    "type": "string",
+                    "enum": ["spring", "summer", "fall", "winter", "all-season"],
+                    "description": "What season this outfit suits",
+                },
+                "notes": {
+                    "type": "string",
+                    "description": "Any styling notes or tips for this outfit",
+                },
+                "wardrobe_item_ids": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "IDs of wardrobe items to include in the outfit (get these from get_wardrobe)",
+                },
+            },
+            "required": ["name", "wardrobe_item_ids"],
+        },
+    },
+    {
+        "name": "get_outfits",
+        "description": "Retrieve the user's saved outfits. Optionally filter by occasion or season.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "occasion": {
+                    "type": "string",
+                    "description": "Filter by occasion (e.g. work, casual, date)",
+                },
+                "season": {
+                    "type": "string",
+                    "enum": ["spring", "summer", "fall", "winter", "all-season"],
+                    "description": "Filter by season",
+                },
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "suggest_outfit",
+        "description": (
+            "Suggest an outfit from the user's wardrobe for a given occasion, season, or context. "
+            "Looks at their wardrobe items and saved outfits to recommend a combination. "
+            "Use this when the user asks 'what should I wear?' or similar."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "occasion": {
+                    "type": "string",
+                    "description": "What the outfit is for (e.g. work, casual, date night, interview)",
+                },
+                "season": {
+                    "type": "string",
+                    "description": "Current season or weather context",
+                },
+                "constraints": {
+                    "type": "string",
+                    "description": "Any constraints (e.g. 'must include my new blazer', 'no heels')",
+                },
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "get_outfit_feedback",
+        "description": (
+            "Get AI feedback on an outfit combination. Takes wardrobe item IDs and returns "
+            "the full item details for Claude to evaluate color harmony, occasion appropriateness, "
+            "style coherence, and suggest swaps."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "wardrobe_item_ids": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "IDs of wardrobe items that form the outfit",
+                },
+                "occasion": {
+                    "type": "string",
+                    "description": "What occasion the outfit is for (e.g. work, casual, date)",
+                },
+                "context": {
+                    "type": "string",
+                    "description": "Additional context (e.g. 'outdoor event', 'office meeting')",
+                },
+            },
+            "required": ["wardrobe_item_ids"],
+        },
+    },
+    {
+        "name": "analyze_wardrobe",
+        "description": (
+            "Analyze the user's wardrobe to identify gaps, category distribution, and color variety. "
+            "Use this when the user asks 'what should I buy next?' or when you want to give gap-aware advice."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
+    {
+        "name": "ask_style_question",
+        "description": (
+            "Ask the user a visual style preference question. Use this every 3-5 messages "
+            "to learn more about their taste. Pick a category you haven't asked about yet."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "description": "Category to ask about (e.g. sneakers, formal_wear, patterns, accessories, dresses, activewear)",
+                },
+            },
+            "required": ["category"],
         },
     },
 ]

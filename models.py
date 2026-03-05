@@ -43,6 +43,11 @@ class WardrobeItem(BaseModel):
     purchase_url: Optional[str] = None
 
 
+class FeedbackRequest(BaseModel):
+    product_title: str
+    feedback: str  # "like" or "dislike"
+
+
 class ProfileData(BaseModel):
     style_adjectives: List[str] = []
     preferred_colors: List[str] = []
