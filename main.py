@@ -26,6 +26,11 @@ uploads_dir.mkdir(exist_ok=True)
 (uploads_dir / "wardrobe").mkdir(exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
+# Serve AI-generated quiz images
+quiz_images_dir = Path(__file__).parent / "static" / "quiz_images"
+quiz_images_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/static/quiz_images", StaticFiles(directory=quiz_images_dir), name="quiz-images")
+
 # API routers — must be registered before static file handling
 app.include_router(auth_router)
 app.include_router(chat_router)

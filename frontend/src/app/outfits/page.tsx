@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api';
+import { Trash2, Layers } from 'lucide-react';
+import { motion } from 'framer-motion';
+import PageHeader from '@/components/PageHeader';
+import SkeletonLoader from '@/components/SkeletonLoader';
+import EmptyState from '@/components/EmptyState';
 
 interface OutfitItem {
   id: number;
@@ -31,7 +36,7 @@ export default function OutfitsPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (authenticated === false) router.replace('/');
+    if (authenticated === false) router.replace('/login');
     else if (onboarded === false) router.replace('/onboarding');
   }, [authenticated, onboarded, authLoading, router]);
 
@@ -58,32 +63,54 @@ export default function OutfitsPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">My Outfits</h1>
+      <PageHeader
+        title="My Outfits"
+        subtitle={`${outfits.length} saved outfit${outfits.length !== 1 ? 's' : ''}`}
+      />
 
       {loading ? (
-        <div className="text-center text-muted py-12">Loading...</div>
-      ) : outfits.length === 0 ? (
-        <div className="text-center text-muted py-12">
-          <p className="text-lg mb-2">No outfits saved yet</p>
-          <p className="text-sm">
-            Ask StyleBot to put together an outfit and save it here
-          </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="card p-4">
+              <div className="skeleton h-5 w-1/2 mb-3" />
+              <div className="skeleton h-3 w-1/3 mb-4" />
+              <div className="flex gap-2">
+                {Array.from({ length: 3 }).map((_, j) => (
+                  <div key={j} className="skeleton w-16 h-16 rounded-lg" />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
+      ) : outfits.length === 0 ? (
+        <EmptyState
+          icon={Layers}
+          title="No outfits saved yet"
+          description="Build an outfit in the Outfit Builder or ask StyleBot to put one together"
+          actionLabel="Build an Outfit"
+          onAction={() => router.push('/builder')}
+        />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {outfits.map((outfit) => (
-            <div key={outfit.id} className="card p-4">
+          {outfits.map((outfit, i) => (
+            <motion.div
+              key={outfit.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.06, duration: 0.3 }}
+              className="card-hover p-4 group"
+            >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="font-semibold">{outfit.name}</h3>
-                  <div className="flex gap-2 text-xs text-muted mt-1">
+                  <h3 className="font-display text-lg font-semibold">{outfit.name}</h3>
+                  <div className="flex gap-2 mt-1.5">
                     {outfit.occasion && (
-                      <span className="bg-zinc-100 dark:bg-zinc-700 px-2 py-0.5 rounded-full capitalize">
+                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-light capitalize font-medium">
                         {outfit.occasion}
                       </span>
                     )}
                     {outfit.season && (
-                      <span className="bg-zinc-100 dark:bg-zinc-700 px-2 py-0.5 rounded-full capitalize">
+                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-gold/10 text-gold dark:bg-gold/20 capitalize font-medium">
                         {outfit.season}
                       </span>
                     )}
@@ -91,9 +118,9 @@ export default function OutfitsPage() {
                 </div>
                 <button
                   onClick={() => deleteOutfit(outfit.id)}
-                  className="text-xs text-red-500 hover:text-red-700"
+                  className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
                 >
-                  Delete
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
 
@@ -114,7 +141,7 @@ export default function OutfitsPage() {
                         className="w-16 h-16 rounded-lg object-cover"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-lg bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center text-xs text-muted capitalize">
+                      <div className="w-16 h-16 rounded-lg bg-cream-dark dark:bg-surface-dark-2 flex items-center justify-center text-xs text-muted capitalize">
                         {item.category}
                       </div>
                     )}
@@ -122,7 +149,7 @@ export default function OutfitsPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}

@@ -125,14 +125,14 @@ class TestQuizImageAccuracy:
     """Each quiz option's image_url must depict the actual item described
     by its label, not a generic/mismatched fashion photo."""
 
-    def test_no_duplicate_image_urls_across_categories(self):
-        """No two different items should use the same image URL."""
-        from services.quiz_service import QUIZ_QUESTIONS
+    def test_no_duplicate_image_urls_in_chat_questions(self):
+        """No two different chat items should use the same image URL."""
+        from services.quiz_service import CHAT_QUESTIONS
 
         seen: dict[str, str] = {}  # url -> "category/label"
         duplicates = []
 
-        for cat_name, cat_data in QUIZ_QUESTIONS.items():
+        for cat_name, cat_data in CHAT_QUESTIONS.items():
             for opt in cat_data["options"]:
                 url = opt["image_url"]
                 loc = f"{cat_name}/{opt['label']}"
@@ -142,36 +142,34 @@ class TestQuizImageAccuracy:
                     seen[url] = loc
 
         assert len(duplicates) == 0, (
-            "Duplicate image URLs found across quiz categories:\n"
+            "Duplicate image URLs found across chat categories:\n"
             + "\n".join(duplicates)
         )
 
-    def test_onboarding_images_are_unique_from_chat(self):
-        """Onboarding outfit categories must not share image URLs with
-        chat-only categories."""
-        from services.quiz_service import QUIZ_QUESTIONS, ONBOARDING_CATEGORIES
+    def test_tree_images_are_unique_from_chat(self):
+        """QUIZ_TREE images must not share URLs with CHAT_QUESTIONS."""
+        from services.quiz_service import QUIZ_TREE, CHAT_QUESTIONS
 
-        chat_cats = [k for k in QUIZ_QUESTIONS if k not in ONBOARDING_CATEGORIES]
         chat_urls = set()
-        for cat in chat_cats:
-            for opt in QUIZ_QUESTIONS[cat]["options"]:
+        for cat_data in CHAT_QUESTIONS.values():
+            for opt in cat_data["options"]:
                 chat_urls.add(opt["image_url"])
 
-        for cat in ONBOARDING_CATEGORIES:
-            for opt in QUIZ_QUESTIONS[cat]["options"]:
+        for node_id, node in QUIZ_TREE.items():
+            for opt in node["options"]:
                 assert opt["image_url"] not in chat_urls, (
-                    f"Onboarding option '{opt['label']}' in {cat} reuses "
-                    f"a chat-only image URL"
+                    f"Tree option '{opt['label']}' in {node_id} reuses "
+                    f"a chat image URL"
                 )
 
-    def test_all_quiz_images_are_unique_per_category(self):
-        """Within a single category, all options must have different images."""
-        from services.quiz_service import QUIZ_QUESTIONS
+    def test_all_chat_images_are_unique_per_category(self):
+        """Within a single chat category, all options must have different images."""
+        from services.quiz_service import CHAT_QUESTIONS
 
-        for cat_name, cat_data in QUIZ_QUESTIONS.items():
+        for cat_name, cat_data in CHAT_QUESTIONS.items():
             urls = [opt["image_url"] for opt in cat_data["options"]]
             assert len(urls) == len(set(urls)), (
-                f"Category '{cat_name}' has duplicate image URLs within itself"
+                f"Chat category '{cat_name}' has duplicate image URLs within itself"
             )
 
 

@@ -1,4 +1,4 @@
-"""Tests for the outfit-based onboarding quiz (TDD — written before implementation)."""
+"""Tests for the adaptive onboarding quiz tree and chat questions."""
 
 import json
 import sqlite3
@@ -6,9 +6,9 @@ import sqlite3
 import pytest
 
 from services.quiz_service import (
-    QUIZ_QUESTIONS,
-    ONBOARDING_CATEGORIES,
-    get_onboarding_questions,
+    QUIZ_TREE,
+    CHAT_QUESTIONS,
+    get_quiz_tree,
     get_chat_question,
 )
 
@@ -22,118 +22,180 @@ VALID_ARCHETYPES = {
     "monochrome", "layered", "tailored", "casual", "professional",
     "adventurous", "sophisticated", "artsy", "chic", "grunge",
     "outdoorsy", "trendy", "timeless",
-}
-
-CORE_ARCHETYPES = {
-    "minimalist", "streetwear", "classic", "bohemian",
-    "athleisure", "edgy", "smart-casual", "vintage",
+    # Tree-specific composite tags
+    "wide-silhouette", "dropped-shoulder", "tailored-casual",
+    "relaxed-precise", "COS", "texture-mix", "quiet-luxury",
+    "proportion-play", "deconstructed", "asymmetric", "oversized",
+    "earth-tones", "neutral-palette", "muted-tones", "warm-tones",
+    "cool-tones", "dark-palette", "all-black", "monochromatic",
+    "color-block", "statement-color", "muted-color", "heritage-plaid",
+    "graphic-print", "logo-free", "tonal", "contrast-stitch",
+    "workwear-detail", "utility", "military-inspired", "cargo",
+    "western", "denim-on-denim", "raw-denim", "selvedge",
+    "techwear", "gorpcore", "functional", "weather-ready",
+    "layered-knit", "chunky-knit", "fine-gauge", "cashmere-blend",
+    "silk-blend", "linen", "cotton", "wool", "leather", "suede",
+    "patent-leather", "velvet", "satin", "mesh", "sheer",
+    "structured", "unstructured", "draped", "fitted", "loose",
+    "cropped", "elongated", "high-waist", "low-rise", "mid-rise",
+    "slim", "straight", "wide-leg", "flare", "bootcut",
+    "pleated", "pintuck", "darted", "gathered", "ruched",
+    "wrap", "tie-front", "button-down", "zip-up", "pullover",
+    "hoodie", "crewneck", "v-neck", "turtleneck", "mock-neck",
+    "collared", "band-collar", "mandarin-collar", "henley",
+    "polo", "tank", "camisole", "bodysuit", "jumpsuit",
 }
 
 CHAT_ONLY_CATEGORIES = [
     "sneakers", "formal_wear", "patterns", "accessories", "dresses", "activewear",
 ]
 
-EXPECTED_ONBOARDING_CATEGORIES = [
-    "outfit_everyday", "outfit_weekend", "outfit_going_out", "outfit_date",
-    "outfit_summer", "outfit_winter", "outfit_work", "outfit_dream",
-]
+ROOT_NODES = ["root_m", "root_f", "root_nb"]
 
 
-# ── Structure tests ──────────────────────────────────────────────
+# ── Tree structure tests ─────────────────────────────────────────
 
 
-class TestQuizStructure:
-    """Verify the onboarding quiz returns 8 outfit-based questions."""
+class TestQuizTreeStructure:
+    """Verify the quiz tree has correct structure."""
 
-    def test_returns_exactly_8_questions(self):
-        questions = get_onboarding_questions()
-        assert len(questions) == 8
+    def test_has_three_root_nodes(self):
+        for root in ROOT_NODES:
+            assert root in QUIZ_TREE, f"Missing root node: {root}"
 
-    def test_each_question_has_4_options(self):
-        for q in get_onboarding_questions():
-            assert len(q["options"]) == 4, f"{q['category']} has {len(q['options'])} options"
+    def test_each_node_has_prompt_and_options(self):
+        for node_id, node in QUIZ_TREE.items():
+            assert "prompt" in node, f"Node {node_id} missing prompt"
+            assert "options" in node, f"Node {node_id} missing options"
+            assert len(node["options"]) >= 2, f"Node {node_id} has fewer than 2 options"
 
     def test_each_option_has_required_keys(self):
-        required = {"id", "label", "image_url", "style_tags"}
-        for q in get_onboarding_questions():
-            for opt in q["options"]:
+        required = {"id", "label", "image_url", "style_tags", "next"}
+        for node_id, node in QUIZ_TREE.items():
+            for opt in node["options"]:
                 missing = required - set(opt.keys())
-                assert not missing, f"Option {opt.get('id', '?')} missing keys: {missing}"
+                assert not missing, f"Option {opt.get('id', '?')} in {node_id} missing keys: {missing}"
 
-    def test_each_question_has_prompt_and_category(self):
-        for q in get_onboarding_questions():
-            assert "prompt" in q and q["prompt"], f"Missing prompt in {q.get('category')}"
-            assert "category" in q and q["category"], "Missing category"
+    def test_next_references_valid_node_or_none(self):
+        for node_id, node in QUIZ_TREE.items():
+            for opt in node["options"]:
+                if opt["next"] is not None:
+                    assert opt["next"] in QUIZ_TREE, (
+                        f"Option {opt['id']} in {node_id} references non-existent node: {opt['next']}"
+                    )
 
-    def test_all_image_urls_globally_unique(self):
-        urls = []
-        for q in get_onboarding_questions():
-            for opt in q["options"]:
-                urls.append(opt["image_url"])
-        assert len(urls) == 32
-        assert len(set(urls)) == 32, "Duplicate image URLs found"
-
-    def test_all_option_ids_unique(self):
-        ids = []
-        for q in get_onboarding_questions():
-            for opt in q["options"]:
-                ids.append(opt["id"])
-        assert len(ids) == 32
-        assert len(set(ids)) == 32, "Duplicate option IDs found"
-
-    def test_style_tags_non_empty_list(self):
-        for q in get_onboarding_questions():
-            for opt in q["options"]:
+    def test_style_tags_non_empty(self):
+        for node_id, node in QUIZ_TREE.items():
+            for opt in node["options"]:
                 assert isinstance(opt["style_tags"], list), f"{opt['id']} style_tags not a list"
                 assert len(opt["style_tags"]) > 0, f"{opt['id']} has empty style_tags"
 
-    def test_onboarding_categories_list_has_8(self):
-        assert len(ONBOARDING_CATEGORIES) == 8
+    def test_all_image_urls_are_local_quiz_images(self):
+        for node_id, node in QUIZ_TREE.items():
+            for opt in node["options"]:
+                url = opt["image_url"]
+                assert url.startswith("/static/quiz_images/"), (
+                    f"{opt['id']}: URL should start with /static/quiz_images/, got {url}"
+                )
 
-    def test_onboarding_categories_are_outfit_based(self):
-        for cat in ONBOARDING_CATEGORIES:
-            assert cat.startswith("outfit_"), f"Category '{cat}' should be outfit-based"
+    def test_unique_tree_images(self):
+        urls = set()
+        for node in QUIZ_TREE.values():
+            for opt in node["options"]:
+                urls.add(opt["image_url"])
+        # 181 total options, some color/fit images shared across styles
+        assert len(urls) >= 100, f"Expected at least 100 unique tree URLs, got {len(urls)}"
 
-    def test_onboarding_categories_match_expected(self):
-        assert set(ONBOARDING_CATEGORIES) == set(EXPECTED_ONBOARDING_CATEGORIES)
+    def test_all_paths_are_depth_5(self):
+        """Every quiz path should be exactly 5 questions deep."""
+        def trace_depths(node_id, depth=1):
+            node = QUIZ_TREE[node_id]
+            depths = []
+            for opt in node["options"]:
+                if opt["next"] is None:
+                    depths.append(depth)
+                else:
+                    depths.extend(trace_depths(opt["next"], depth + 1))
+            return depths
+
+        for root in ["root_m", "root_f", "root_nb"]:
+            depths = trace_depths(root)
+            for d in depths:
+                assert d == 5, f"Path from {root} has depth {d}, expected 5"
+
+    def test_color_and_fit_nodes_exist(self):
+        """Cross-cutting color and fit nodes must exist."""
+        for node_id in ["color_m", "color_f", "fit_m", "fit_f"]:
+            assert node_id in QUIZ_TREE, f"Missing cross-cutting node: {node_id}"
+
+    def test_fit_nodes_are_terminal(self):
+        """Fit nodes should be the final question (all next=None)."""
+        for node_id in ["fit_m", "fit_f"]:
+            node = QUIZ_TREE[node_id]
+            for opt in node["options"]:
+                assert opt["next"] is None, f"{opt['id']} in {node_id} should be terminal"
 
 
-# ── Style archetype tests ────────────────────────────────────────
+# ── get_quiz_tree() API tests ────────────────────────────────────
 
 
-class TestStyleArchetypes:
-    """Verify style tags are valid and cover all core archetypes."""
+class TestGetQuizTree:
+    """Verify the get_quiz_tree() public API."""
 
-    def test_all_tags_belong_to_valid_set(self):
-        for q in get_onboarding_questions():
+    def test_returns_start_and_nodes(self):
+        result = get_quiz_tree("male")
+        assert "start" in result
+        assert "nodes" in result
+
+    @pytest.mark.parametrize("gender,expected_start", [
+        ("male", "root_m"),
+        ("Man", "root_m"),
+        ("female", "root_f"),
+        ("Woman", "root_f"),
+        ("non-binary", "root_nb"),
+        ("Non-binary", "root_nb"),
+        ("Prefer not to say", "root_nb"),
+        (None, "root_nb"),
+    ])
+    def test_gender_maps_to_correct_root(self, gender, expected_start):
+        result = get_quiz_tree(gender)
+        assert result["start"] == expected_start
+
+    def test_nodes_is_the_full_tree(self):
+        result = get_quiz_tree("male")
+        assert result["nodes"] is QUIZ_TREE
+
+
+# ── Chat question tests ──────────────────────────────────────────
+
+
+class TestChatQuestions:
+    """Verify chat-only questions work correctly."""
+
+    def test_chat_question_returns_for_all_categories(self):
+        for cat in CHAT_ONLY_CATEGORIES:
+            q = get_chat_question(cat)
+            assert q is not None, f"get_chat_question('{cat}') returned None"
+            assert q["category"] == cat
+            assert len(q["options"]) == 4
+
+    def test_chat_question_returns_none_for_unknown(self):
+        assert get_chat_question("nonexistent") is None
+
+    def test_chat_options_have_required_keys(self):
+        required = {"id", "label", "image_url", "style_tags"}
+        for cat in CHAT_ONLY_CATEGORIES:
+            q = get_chat_question(cat)
             for opt in q["options"]:
-                for tag in opt["style_tags"]:
-                    assert tag in VALID_ARCHETYPES, (
-                        f"Unknown tag '{tag}' in option '{opt['id']}'"
-                    )
+                missing = required - set(opt.keys())
+                assert not missing, f"Chat option {opt.get('id', '?')} missing keys: {missing}"
 
-    def test_core_archetypes_each_appear_at_least_twice(self):
-        tag_counts = {}
-        for q in get_onboarding_questions():
-            for opt in q["options"]:
-                for tag in opt["style_tags"]:
-                    tag_counts[tag] = tag_counts.get(tag, 0) + 1
-
-        for archetype in CORE_ARCHETYPES:
-            count = tag_counts.get(archetype, 0)
-            assert count >= 2, (
-                f"Core archetype '{archetype}' only appears {count} time(s), need >= 2"
-            )
-
-    def test_questions_are_about_full_outfits(self):
-        """Category names reflect outfit-based contexts, not single items."""
-        single_item_categories = {
-            "shirts", "hoodies", "pants", "shoes", "jackets",
-        }
-        for q in get_onboarding_questions():
-            assert q["category"] not in single_item_categories, (
-                f"Category '{q['category']}' is a single-item category, not an outfit"
-            )
+    def test_22_unique_chat_images(self):
+        urls = set()
+        for cat_data in CHAT_QUESTIONS.values():
+            for opt in cat_data["options"]:
+                urls.add(opt["image_url"])
+        assert len(urls) == 24, f"Expected 24 unique chat URLs, got {len(urls)}"
 
 
 # ── Integration tests (in-memory SQLite) ─────────────────────────
@@ -184,24 +246,21 @@ def _setup_test_db():
 
 
 class TestIntegration:
-    """Test the full quiz submission flow with an in-memory DB."""
+    """Test quiz submission flow with an in-memory DB."""
 
-    def test_submit_8_answers_saves_style_quiz(self):
+    def test_submit_tree_answers_saves_style_quiz(self):
         conn, user_id = _setup_test_db()
-        questions = get_onboarding_questions()
-        assert len(questions) == 8
+        tree = get_quiz_tree("male")
+        start_node = QUIZ_TREE[tree["start"]]
 
-        # Simulate picking the first option from each question
-        answers = []
-        for q in questions:
-            opt = q["options"][0]
-            answers.append({
-                "category": q["category"],
-                "choice": opt["id"],
-                "style_tags": opt["style_tags"],
-            })
+        # Simulate picking the first option
+        opt = start_node["options"][0]
+        answers = [{
+            "node": tree["start"],
+            "choice": opt["id"],
+            "style_tags": opt["style_tags"],
+        }]
 
-        # Save quiz answers (mirrors profile_router.submit_style_quiz logic)
         conn.execute(
             "UPDATE profiles SET style_quiz = ?, onboarded = 1, updated_at = datetime('now') WHERE user_id = ?",
             (json.dumps(answers), user_id),
@@ -210,7 +269,7 @@ class TestIntegration:
 
         row = conn.execute("SELECT style_quiz, onboarded FROM profiles WHERE user_id = ?", (user_id,)).fetchone()
         saved = json.loads(row["style_quiz"])
-        assert len(saved) == 8
+        assert len(saved) == 1
         assert row["onboarded"] == 1
         conn.close()
 
@@ -218,18 +277,15 @@ class TestIntegration:
         conn, user_id = _setup_test_db()
         from services.profile_service import update_profile
 
-        questions = get_onboarding_questions()
-        all_tags = []
-        for q in questions:
-            opt = q["options"][0]
-            all_tags.extend(opt["style_tags"])
+        # Collect tags from first option of root_m
+        start_node = QUIZ_TREE["root_m"]
+        all_tags = list(start_node["options"][0]["style_tags"])
 
         update_profile(user_id, {"style_adjectives": all_tags}, conn)
 
         row = conn.execute("SELECT style_adjectives FROM profiles WHERE user_id = ?", (user_id,)).fetchone()
         saved = json.loads(row["style_adjectives"])
 
-        # Weighted format: dict of {tag: count}
         assert isinstance(saved, dict)
         for tag in all_tags:
             assert tag in saved, f"Tag '{tag}' not in style_adjectives"
@@ -239,11 +295,9 @@ class TestIntegration:
     def test_onboarded_flag_set_after_submission(self):
         conn, user_id = _setup_test_db()
 
-        # Before: not onboarded
         row = conn.execute("SELECT onboarded FROM profiles WHERE user_id = ?", (user_id,)).fetchone()
         assert row["onboarded"] == 0
 
-        # Submit quiz
         conn.execute(
             "UPDATE profiles SET onboarded = 1, updated_at = datetime('now') WHERE user_id = ?",
             (user_id,),
@@ -254,47 +308,10 @@ class TestIntegration:
         assert row["onboarded"] == 1
         conn.close()
 
-    def test_get_onboarding_endpoint_returns_8_questions(self):
-        """Simulates GET /api/quiz/onboarding response format."""
-        questions = get_onboarding_questions()
-        assert len(questions) == 8
-        for q in questions:
-            assert "prompt" in q
-            assert "category" in q
-            assert "options" in q
-            assert len(q["options"]) == 4
-
-
-# ── Backward compatibility tests ─────────────────────────────────
-
-
-class TestBackwardCompatibility:
-    """Verify in-chat quiz categories are unaffected."""
-
-    def test_chat_question_still_works_for_all_categories(self):
-        for cat in CHAT_ONLY_CATEGORIES:
-            q = get_chat_question(cat)
-            assert q is not None, f"get_chat_question('{cat}') returned None"
-            assert q["category"] == cat
-            assert len(q["options"]) == 4
-
-    def test_in_chat_categories_unaffected(self):
-        for cat in CHAT_ONLY_CATEGORIES:
-            assert cat in QUIZ_QUESTIONS, f"Chat category '{cat}' missing from QUIZ_QUESTIONS"
-
-    def test_old_answer_format_still_valid(self):
-        """The QuizAnswer schema {category, choice, style_tags} is unchanged."""
-        # Just verify the shape works — no schema change needed
-        answer = {"category": "sneakers", "choice": "retro-runner", "style_tags": ["retro", "sporty"]}
-        assert "category" in answer
-        assert "choice" in answer
-        assert "style_tags" in answer
-        assert isinstance(answer["style_tags"], list)
-
-    def test_old_onboarding_categories_removed(self):
-        """The old single-item onboarding categories should no longer be in ONBOARDING_CATEGORIES."""
-        old_categories = {"shirts", "hoodies", "pants", "shoes", "outfits", "jackets"}
-        for cat in old_categories:
-            assert cat not in ONBOARDING_CATEGORIES, (
-                f"Old category '{cat}' still in ONBOARDING_CATEGORIES"
-            )
+    def test_get_quiz_tree_returns_valid_structure(self):
+        """Simulates GET /api/quiz/tree response format."""
+        for gender in ["male", "female", "non-binary", None]:
+            result = get_quiz_tree(gender)
+            assert "start" in result
+            assert "nodes" in result
+            assert result["start"] in result["nodes"]

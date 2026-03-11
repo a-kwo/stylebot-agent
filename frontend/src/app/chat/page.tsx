@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getConversations, streamChat } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
 import QuizBlock from '@/components/QuizBlock';
+import { ArrowUp, Loader2, MessageSquare } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -14,6 +16,25 @@ interface Message {
   quizzes?: any[];
   toolStatus?: string;
   streaming?: boolean;
+}
+
+function ThinkingDots() {
+  return (
+    <div className="flex items-center gap-1 px-4 py-3">
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          className="w-2 h-2 rounded-full bg-accent/40 dark:bg-accent-light/40"
+          animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
+          transition={{
+            duration: 1,
+            repeat: Infinity,
+            delay: i * 0.15,
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
 export default function ChatPage() {
@@ -33,7 +54,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (authLoading) return;
     if (authenticated === false) {
-      router.replace('/');
+      router.replace('/login');
     } else if (onboarded === false) {
       router.replace('/onboarding');
     }
@@ -61,7 +82,6 @@ export default function ChatPage() {
               .join('\n\n');
             if (texts) loaded.push({ role: 'assistant', text: texts });
           } else if (msg.role === 'meta' && Array.isArray(msg.content)) {
-            // Meta records hold products/quizzes persisted separately
             const products: any[] = [];
             const quizzes: any[] = [];
             for (const block of msg.content) {
@@ -71,7 +91,6 @@ export default function ChatPage() {
                 quizzes.push(block.quiz);
               }
             }
-            // Attach to the last assistant message
             if (products.length > 0 || quizzes.length > 0) {
               const lastAssistant = [...loaded].reverse().find((m) => m.role === 'assistant');
               if (lastAssistant) {
@@ -106,7 +125,6 @@ export default function ChatPage() {
     setInput('');
     setSending(true);
 
-    // Add user message + placeholder assistant message
     setMessages((prev) => [
       ...prev,
       { role: 'user', text },
@@ -206,11 +224,44 @@ export default function ChatPage() {
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-2xl mx-auto flex flex-col gap-4">
+          {messages.length === 1 && messages[0].role === 'assistant' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col items-center justify-center py-16"
+            >
+              <div className="relative mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-accent/8 dark:bg-accent/10 flex items-center justify-center">
+                  <MessageSquare className="w-7 h-7 text-accent/70 dark:text-accent-light/70" strokeWidth={1.5} />
+                </div>
+                <div className="absolute -inset-3 rounded-3xl border border-dashed border-accent/10 dark:border-accent-light/10" />
+              </div>
+              <h2 className="font-display text-3xl font-semibold mb-2 tracking-tight">What shall we style?</h2>
+              <div className="w-10 h-[1.5px] bg-accent/40 mx-auto mb-3" />
+              <p className="text-muted text-sm text-center max-w-xs leading-relaxed">
+                Outfit ideas, wardrobe advice, or discovering new pieces — I&apos;m here to help curate your look.
+              </p>
+              <div className="flex gap-2 mt-6">
+                {['Outfit ideas', 'Style advice', 'Find pieces'].map((hint, i) => (
+                  <span key={i} className="text-[11px] font-medium px-3 py-1.5 rounded-full bg-accent/5 text-accent/60 dark:bg-accent/10 dark:text-accent-light/60">
+                    {hint}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
           {messages.map((msg, i) => (
-            <div key={i}>
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+            >
               {msg.role === 'user' ? (
                 <div className="flex justify-end">
-                  <div className="bg-ink text-cream dark:bg-cream dark:text-ink px-4 py-3 rounded-2xl rounded-br-md max-w-[80%] text-sm">
+                  <div className="bg-gradient-to-r from-accent to-accent-dark text-white px-4 py-3 rounded-2xl rounded-br-md max-w-[80%] text-sm shadow-sm">
                     {msg.text}
                   </div>
                 </div>
@@ -218,25 +269,26 @@ export default function ChatPage() {
                 <div className="flex flex-col gap-3 max-w-[85%]">
                   {/* Tool status indicator */}
                   {msg.streaming && msg.toolStatus && !msg.text && (
-                    <div className="text-sm text-muted animate-pulse">
+                    <div className="flex items-center gap-2 text-sm text-muted">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />
                       {msg.toolStatus}
                     </div>
                   )}
 
                   {/* Text bubble */}
                   {msg.text && (
-                    <div className="bg-zinc-100 dark:bg-zinc-800 px-4 py-3 rounded-2xl rounded-bl-md text-sm chat-markdown whitespace-pre-wrap">
+                    <div className="bg-white dark:bg-surface-dark-1 border-l-2 border-accent/30 dark:border-accent-light/30 px-4 py-3 rounded-2xl rounded-bl-md text-sm chat-markdown whitespace-pre-wrap shadow-sm">
                       {msg.text}
                       {msg.streaming && (
-                        <span className="inline-block w-1.5 h-4 bg-ink dark:bg-cream ml-0.5 animate-pulse" />
+                        <span className="inline-block w-1.5 h-4 bg-accent dark:bg-accent-light ml-0.5 animate-pulse rounded-sm" />
                       )}
                     </div>
                   )}
 
                   {/* Streaming with no text yet */}
                   {msg.streaming && !msg.text && !msg.toolStatus && (
-                    <div className="bg-zinc-100 dark:bg-zinc-800 px-4 py-3 rounded-2xl rounded-bl-md text-sm text-muted animate-pulse">
-                      StyleBot is thinking...
+                    <div className="bg-white dark:bg-surface-dark-1 rounded-2xl rounded-bl-md shadow-sm">
+                      <ThinkingDots />
                     </div>
                   )}
 
@@ -250,7 +302,7 @@ export default function ChatPage() {
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {msg.products.map((p: any, j: number) => (
-                          <ProductCard key={j} item={p} />
+                          <ProductCard key={j} item={p} index={j} />
                         ))}
                       </div>
                     </div>
@@ -262,14 +314,14 @@ export default function ChatPage() {
                   ))}
                 </div>
               )}
-            </div>
+            </motion.div>
           ))}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
       {/* Input area */}
-      <div className="border-t border-border dark:border-border-dark bg-white dark:bg-zinc-900 px-4 py-3">
+      <div className="border-t border-border dark:border-surface-dark-3 backdrop-blur-xl bg-white/80 dark:bg-surface-dark/80 px-4 py-3">
         <form
           onSubmit={handleSend}
           className="max-w-2xl mx-auto flex gap-3 items-end"
@@ -295,9 +347,9 @@ export default function ChatPage() {
           <button
             type="submit"
             disabled={sending || !input.trim()}
-            className="btn-primary shrink-0"
+            className="w-10 h-10 rounded-full bg-accent text-white flex items-center justify-center shrink-0 hover:bg-accent-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-accent/20"
           >
-            Send
+            <ArrowUp className="w-5 h-5" />
           </button>
         </form>
       </div>

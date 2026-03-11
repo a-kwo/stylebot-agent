@@ -41,7 +41,7 @@ export async function apiFetch(
 
   if (res.status === 401) {
     clearToken();
-    window.location.replace('/');
+    window.location.replace('/login');
     throw new Error('Session expired');
   }
 
@@ -170,7 +170,7 @@ export function streamChat(
     if (!res.ok) {
       if (res.status === 401) {
         clearToken();
-        window.location.replace('/');
+        window.location.replace('/login');
         return;
       }
       callbacks.onError?.(`Server error ${res.status}`);

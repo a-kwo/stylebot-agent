@@ -54,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearToken();
     setAuthenticated(false);
     setOnboarded(null);
+    window.location.href = '/login';
   };
 
   return (

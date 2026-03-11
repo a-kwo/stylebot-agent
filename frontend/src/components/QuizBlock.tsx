@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { submitQuizAnswer } from '@/lib/api';
+import { Check } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface QuizOption {
   id: string;
@@ -20,7 +22,7 @@ export default function QuizBlock({ quiz }: { quiz: QuizData }) {
   const [selected, setSelected] = useState<string | null>(null);
 
   const handleSelect = (opt: QuizOption) => {
-    if (selected) return; // prevent re-selection
+    if (selected) return;
     setSelected(opt.id);
     submitQuizAnswer({
       category: quiz.category,
@@ -31,22 +33,25 @@ export default function QuizBlock({ quiz }: { quiz: QuizData }) {
 
   return (
     <div className="card p-4 max-w-lg">
-      <div className="text-xs font-medium text-muted mb-1">
+      <div className="text-xs font-medium text-accent dark:text-accent-light mb-1">
         StyleBot has a question
       </div>
       <p className="text-sm font-medium mb-3">{quiz.prompt}</p>
       <div className="grid grid-cols-2 gap-2">
-        {quiz.options.map((opt) => (
-          <button
+        {quiz.options.map((opt, i) => (
+          <motion.button
             key={opt.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.08, duration: 0.3 }}
             onClick={() => handleSelect(opt)}
             disabled={!!selected}
-            className={`rounded-xl overflow-hidden border-2 transition-all ${
+            className={`relative rounded-xl overflow-hidden border-2 transition-all duration-300 ${
               selected === opt.id
-                ? 'border-ink dark:border-cream'
+                ? 'border-accent dark:border-accent-light ring-2 ring-accent/20'
                 : selected
-                  ? 'border-transparent opacity-50'
-                  : 'border-transparent hover:border-zinc-300'
+                  ? 'border-transparent opacity-40'
+                  : 'border-transparent hover:border-accent/30 hover:scale-[1.02]'
             }`}
           >
             <img
@@ -55,8 +60,13 @@ export default function QuizBlock({ quiz }: { quiz: QuizData }) {
               className="w-full aspect-square object-cover"
               loading="lazy"
             />
-            <div className="text-xs font-medium py-1">{opt.label}</div>
-          </button>
+            {selected === opt.id && (
+              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-accent text-white flex items-center justify-center">
+                <Check className="w-3.5 h-3.5" />
+              </div>
+            )}
+            <div className="text-xs font-medium py-1.5">{opt.label}</div>
+          </motion.button>
         ))}
       </div>
     </div>

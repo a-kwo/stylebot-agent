@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api';
+import { Plus, X, MessageSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import PageHeader from '@/components/PageHeader';
+import SkeletonLoader from '@/components/SkeletonLoader';
+import EmptyState from '@/components/EmptyState';
 
 interface WardrobeItem {
   id: number;
@@ -45,20 +50,18 @@ export default function BuilderPage() {
     accessories: null,
   });
 
-  // Save form state
   const [outfitName, setOutfitName] = useState('');
   const [occasion, setOccasion] = useState('');
   const [season, setSeason] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
 
-  // Feedback state
   const [feedback, setFeedback] = useState('');
   const [askingFeedback, setAskingFeedback] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
-    if (authenticated === false) router.replace('/');
+    if (authenticated === false) router.replace('/login');
     else if (onboarded === false) router.replace('/onboarding');
   }, [authenticated, onboarded, authLoading, router]);
 
@@ -145,21 +148,20 @@ export default function BuilderPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">Outfit Builder</h1>
+      <PageHeader title="Outfit Builder" subtitle="Mix and match pieces from your wardrobe" />
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left panel: Wardrobe grid */}
         <div className="lg:w-1/2">
-          <h2 className="text-lg font-semibold mb-3">Your Wardrobe</h2>
+          <h2 className="font-display text-xl font-semibold mb-3">Your Wardrobe</h2>
 
-          {/* Category filter */}
           <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                 filter === 'all'
-                  ? 'bg-ink text-cream dark:bg-cream dark:text-ink'
-                  : 'bg-zinc-100 dark:bg-zinc-800 text-muted hover:text-ink dark:hover:text-cream'
+                  ? 'bg-accent text-white shadow-md shadow-accent/20'
+                  : 'bg-cream-dark dark:bg-surface-dark-2 text-muted hover:text-ink dark:hover:text-cream'
               }`}
             >
               All
@@ -168,10 +170,10 @@ export default function BuilderPage() {
               <button
                 key={cat}
                 onClick={() => setFilter(cat)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                   filter === cat
-                    ? 'bg-ink text-cream dark:bg-cream dark:text-ink'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-muted hover:text-ink dark:hover:text-cream'
+                    ? 'bg-accent text-white shadow-md shadow-accent/20'
+                    : 'bg-cream-dark dark:bg-surface-dark-2 text-muted hover:text-ink dark:hover:text-cream'
                 }`}
               >
                 {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -180,18 +182,20 @@ export default function BuilderPage() {
           </div>
 
           {loading ? (
-            <div className="text-center text-muted py-8">Loading...</div>
+            <SkeletonLoader variant="grid" count={6} />
           ) : filteredItems.length === 0 ? (
-            <div className="text-center text-muted py-8">
-              <p>No items found</p>
-            </div>
+            <EmptyState
+              icon={MessageSquare}
+              title="No items found"
+              description="Add items to your wardrobe by chatting with StyleBot"
+            />
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
               {filteredItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => addToSlot(item)}
-                  className="card p-2 text-left hover:ring-2 hover:ring-ink dark:hover:ring-cream transition-all"
+                  className="card p-2 text-left hover:ring-2 hover:ring-accent dark:hover:ring-accent-light transition-all duration-200"
                 >
                   {item.image_url ? (
                     <img
@@ -200,7 +204,7 @@ export default function BuilderPage() {
                       className="w-full aspect-square object-cover rounded-lg"
                     />
                   ) : (
-                    <div className="w-full aspect-square bg-zinc-100 dark:bg-zinc-700 rounded-lg flex items-center justify-center text-xl text-muted">
+                    <div className="w-full aspect-square bg-cream-dark dark:bg-surface-dark-2 rounded-lg flex items-center justify-center text-xl text-muted">
                       {item.category.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -214,7 +218,7 @@ export default function BuilderPage() {
 
         {/* Right panel: Outfit canvas */}
         <div className="lg:w-1/2">
-          <h2 className="text-lg font-semibold mb-3">Outfit Canvas</h2>
+          <h2 className="font-display text-xl font-semibold mb-3">Outfit Canvas</h2>
 
           {/* Slots */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
@@ -225,37 +229,52 @@ export default function BuilderPage() {
                   key={slotKey}
                   className="card p-3 flex flex-col items-center text-center min-h-[120px]"
                 >
-                  <div className="text-xs text-muted mb-2 font-medium">
+                  <div className="text-xs text-muted mb-2 font-medium uppercase tracking-wider">
                     {SLOT_LABELS[slotKey]}
                   </div>
-                  {item ? (
-                    <>
-                      {item.image_url ? (
-                        <img
-                          src={item.image_url}
-                          alt={item.name}
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-700 rounded-lg flex items-center justify-center text-lg text-muted">
-                          {item.category.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="text-xs font-medium mt-1 truncate w-full">
-                        {item.name}
-                      </div>
-                      <button
-                        onClick={() => removeFromSlot(slotKey)}
-                        className="text-[10px] text-red-500 hover:text-red-700 mt-1"
+                  <AnimatePresence mode="wait">
+                    {item ? (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex flex-col items-center"
                       >
-                        Remove
-                      </button>
-                    </>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center text-muted text-sm">
-                      Empty
-                    </div>
-                  )}
+                        {item.image_url ? (
+                          <img
+                            src={item.image_url}
+                            alt={item.name}
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-cream-dark dark:bg-surface-dark-2 rounded-lg flex items-center justify-center text-lg text-muted">
+                            {item.category.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="text-xs font-medium mt-1 truncate w-full">
+                          {item.name}
+                        </div>
+                        <button
+                          onClick={() => removeFromSlot(slotKey)}
+                          className="flex items-center gap-0.5 text-[10px] text-red-500 hover:text-red-700 mt-1"
+                        >
+                          <X className="w-3 h-3" />
+                          Remove
+                        </button>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="empty"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex-1 flex items-center justify-center border-2 border-dashed border-border dark:border-surface-dark-3 rounded-xl w-full min-h-[80px]"
+                      >
+                        <Plus className="w-5 h-5 text-muted" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}
@@ -263,8 +282,8 @@ export default function BuilderPage() {
 
           {/* Save form */}
           {filledSlots.length > 0 && (
-            <div className="card p-4 mb-4">
-              <h3 className="text-sm font-semibold mb-3">Save Outfit</h3>
+            <div className="card backdrop-blur-md bg-white/70 dark:bg-surface-dark-1/70 p-4 mb-4">
+              <h3 className="font-display text-lg font-semibold mb-3">Save Outfit</h3>
               <input
                 type="text"
                 placeholder="Outfit name"
@@ -316,15 +335,15 @@ export default function BuilderPage() {
             <button
               onClick={askStyleBot}
               disabled={askingFeedback}
-              className="btn-primary w-full mb-4"
+              className="btn-secondary w-full mb-4"
             >
               {askingFeedback ? 'Asking StyleBot...' : 'Ask StyleBot for Feedback'}
             </button>
           )}
 
           {feedback && (
-            <div className="card p-4">
-              <h3 className="text-sm font-semibold mb-2">StyleBot Feedback</h3>
+            <div className="card p-4 border-l-2 border-accent/30">
+              <h3 className="font-display text-base font-semibold mb-2">StyleBot Feedback</h3>
               <p className="text-sm text-muted whitespace-pre-wrap">{feedback}</p>
             </div>
           )}

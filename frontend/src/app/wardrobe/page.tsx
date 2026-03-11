@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api';
+import { Trash2, Shirt } from 'lucide-react';
+import { motion } from 'framer-motion';
+import PageHeader from '@/components/PageHeader';
+import SkeletonLoader from '@/components/SkeletonLoader';
+import EmptyState from '@/components/EmptyState';
 
 interface WardrobeItem {
   id: number;
@@ -33,7 +38,7 @@ export default function WardrobePage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (authenticated === false) router.replace('/');
+    if (authenticated === false) router.replace('/login');
     else if (onboarded === false) router.replace('/onboarding');
   }, [authenticated, onboarded, authLoading, router]);
 
@@ -59,9 +64,14 @@ export default function WardrobePage() {
 
   if (!authenticated || onboarded !== true) return null;
 
+  const categoryCount = (cat: string) => {
+    if (cat === 'all') return items.length;
+    return items.filter((i) => i.category === cat).length;
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">My Wardrobe</h1>
+      <PageHeader title="My Wardrobe" subtitle={`${items.length} pieces in your collection`} />
 
       {/* Category filter */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
@@ -69,58 +79,71 @@ export default function WardrobePage() {
           <button
             key={cat}
             onClick={() => setFilter(cat)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
               filter === cat
-                ? 'bg-ink text-cream dark:bg-cream dark:text-ink'
-                : 'bg-zinc-100 dark:bg-zinc-800 text-muted hover:text-ink dark:hover:text-cream'
+                ? 'bg-accent text-white shadow-md shadow-accent/20'
+                : 'bg-cream-dark dark:bg-surface-dark-2 text-muted hover:text-ink dark:hover:text-cream'
             }`}
           >
             {cat.charAt(0).toUpperCase() + cat.slice(1)}
+            {!loading && (
+              <span className={`text-xs ${filter === cat ? 'text-white/70' : 'text-muted'}`}>
+                {categoryCount(cat)}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <div className="text-center text-muted py-12">Loading...</div>
+        <SkeletonLoader variant="grid" count={8} />
       ) : items.length === 0 ? (
-        <div className="text-center text-muted py-12">
-          <p className="text-lg mb-2">No items yet</p>
-          <p className="text-sm">
-            Tell StyleBot about clothes you own and they&apos;ll appear here
-          </p>
-        </div>
+        <EmptyState
+          icon={Shirt}
+          title="No items yet"
+          description="Tell StyleBot about clothes you own and they'll appear here"
+          actionLabel="Chat with StyleBot"
+          onAction={() => router.push('/chat')}
+        />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {items.map((item) => (
-            <div key={item.id} className="card p-3 flex flex-col gap-2">
+          {items.map((item, i) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04, duration: 0.3 }}
+              className="card-hover p-3 flex flex-col gap-2 group"
+            >
               {(() => {
                 const errors = imgErrors[item.id] || 0;
                 const hasUrl = item.local_image_path || item.image_url;
-                // Stage 0: local_image_path or proxy URL
-                // Stage 1: direct URL (proxy failed, try browser-direct)
-                // Stage 2+: placeholder
                 if (hasUrl && errors === 0) {
                   return (
-                    <img
-                      src={item.local_image_path || proxyUrl(item.image_url!)}
-                      alt={item.name}
-                      className="w-full aspect-square object-cover rounded-xl"
-                      onError={() => setImgErrors((prev) => ({ ...prev, [item.id]: 1 }))}
-                    />
+                    <div className="overflow-hidden rounded-xl">
+                      <img
+                        src={item.local_image_path || proxyUrl(item.image_url!)}
+                        alt={item.name}
+                        className="w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={() => setImgErrors((prev) => ({ ...prev, [item.id]: 1 }))}
+                      />
+                    </div>
                   );
                 }
                 if (item.image_url && errors === 1) {
                   return (
-                    <img
-                      src={item.image_url}
-                      alt={item.name}
-                      className="w-full aspect-square object-cover rounded-xl"
-                      onError={() => setImgErrors((prev) => ({ ...prev, [item.id]: 2 }))}
-                    />
+                    <div className="overflow-hidden rounded-xl">
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={() => setImgErrors((prev) => ({ ...prev, [item.id]: 2 }))}
+                      />
+                    </div>
                   );
                 }
                 return (
-                  <div className="w-full aspect-square bg-zinc-100 dark:bg-zinc-700 rounded-xl flex items-center justify-center text-2xl text-muted">
+                  <div className="w-full aspect-square bg-cream-dark dark:bg-surface-dark-2 rounded-xl flex items-center justify-center text-2xl text-muted">
                     {item.category.charAt(0).toUpperCase()}
                   </div>
                 );
@@ -135,11 +158,12 @@ export default function WardrobePage() {
               )}
               <button
                 onClick={() => deleteItem(item.id)}
-                className="text-xs text-red-500 hover:text-red-700 mt-auto self-start"
+                className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 mt-auto self-start opacity-0 group-hover:opacity-100 transition-opacity"
               >
+                <Trash2 className="w-3 h-3" />
                 Remove
               </button>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}

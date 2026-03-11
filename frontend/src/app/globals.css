@@ -3,58 +3,115 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  ::selection {
+    @apply bg-accent/20 text-accent-dark;
+  }
+
+  .dark ::selection {
+    @apply bg-accent-light/30 text-accent-50;
+  }
+
   body {
     @apply bg-cream text-ink antialiased;
   }
 
   .dark body {
-    @apply bg-zinc-900 text-zinc-100;
+    @apply bg-surface-dark text-zinc-100;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-ink text-cream px-6 py-3 rounded-xl font-medium
-           hover:bg-accent-light transition-colors disabled:opacity-50
-           disabled:cursor-not-allowed;
+    @apply px-6 py-3 rounded-xl font-medium text-white tracking-wide
+           bg-gradient-to-r from-accent to-accent-dark
+           shadow-md shadow-accent/25
+           hover:shadow-xl hover:shadow-accent/30 hover:scale-[1.02] hover:brightness-110
+           active:scale-[0.98]
+           transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md disabled:hover:brightness-100;
   }
 
   .dark .btn-primary {
-    @apply bg-cream text-ink hover:bg-zinc-200;
+    @apply shadow-accent/15 hover:shadow-accent/25;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 rounded-xl font-medium tracking-wide
+           border border-accent/30 text-accent bg-accent/5
+           hover:bg-accent/10 hover:border-accent/50 transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .dark .btn-secondary {
+    @apply border-accent-light/30 text-accent-light bg-accent-light/5 hover:bg-accent-light/10 hover:border-accent-light/50;
   }
 
   .btn-ghost {
     @apply px-4 py-2 rounded-xl font-medium text-muted
-           hover:bg-zinc-100 transition-colors;
+           hover:bg-cream-dark
+           transition-all duration-200;
   }
 
   .dark .btn-ghost {
-    @apply hover:bg-zinc-800;
+    @apply hover:bg-surface-dark-2;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl border border-border bg-white
-           text-ink placeholder-muted focus:outline-none focus:ring-2
-           focus:ring-ink/20 transition-shadow;
+    @apply w-full px-4 py-3 rounded-2xl border border-border
+           bg-white text-ink placeholder-muted/60
+           focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30
+           transition-all duration-200;
   }
 
   .dark .input-field {
-    @apply bg-zinc-800 border-border-dark text-zinc-100
-           focus:ring-zinc-400/20;
+    @apply bg-surface-dark-2 border-surface-dark-3 text-zinc-100
+           placeholder-zinc-500
+           focus:ring-accent-light/20 focus:border-accent-light/30;
   }
 
   .card {
-    @apply bg-white rounded-2xl border border-border shadow-sm;
+    @apply bg-white/90 backdrop-blur-sm rounded-2xl border border-border/80
+           shadow-sm transition-all duration-300;
   }
 
   .dark .card {
-    @apply bg-zinc-800 border-border-dark;
+    @apply bg-surface-dark-1/90 border-surface-dark-3/80;
+  }
+
+  .card-hover {
+    @apply bg-white/90 backdrop-blur-sm rounded-2xl border border-border/80
+           shadow-sm transition-all duration-300
+           hover:shadow-lg hover:shadow-ink/5 hover:scale-[1.01] hover:border-border;
+  }
+
+  .dark .card-hover {
+    @apply bg-surface-dark-1/90 border-surface-dark-3/80
+           hover:shadow-white/5 hover:border-surface-dark-3;
+  }
+
+  .skeleton {
+    @apply bg-gradient-to-r from-cream-dark via-white to-cream-dark
+           dark:from-surface-dark-2 dark:via-surface-dark-3 dark:to-surface-dark-2
+           bg-[length:200%_100%] animate-shimmer rounded-xl;
+  }
+
+  /* Decorative thin rule — editorial feel */
+  .rule {
+    @apply h-px bg-gradient-to-r from-transparent via-border to-transparent;
+  }
+
+  .dark .rule {
+    @apply via-surface-dark-3;
   }
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -62,11 +119,28 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-zinc-300 rounded-full;
+  @apply bg-border rounded-full;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  @apply bg-zinc-600;
+  @apply bg-surface-dark-3;
+}
+
+/* Subtle noise texture overlay */
+.noise::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.015;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px;
+}
+
+.dark .noise::before {
+  opacity: 0.03;
 }
 
 /* Markdown in chat bubbles */
@@ -75,13 +149,38 @@
 }
 
 .chat-markdown ul {
-  @apply list-disc list-inside mb-2;
+  @apply list-disc list-inside mb-2 ml-1;
 }
 
 .chat-markdown ol {
-  @apply list-decimal list-inside mb-2;
+  @apply list-decimal list-inside mb-2 ml-1;
 }
 
 .chat-markdown strong {
   @apply font-semibold;
+}
+
+.chat-markdown a {
+  @apply text-accent underline underline-offset-2 decoration-accent/30 hover:decoration-accent;
+}
+
+.chat-markdown code {
+  @apply bg-accent/5 text-accent-dark px-1.5 py-0.5 rounded-md text-[13px] font-mono;
+}
+
+.dark .chat-markdown a {
+  @apply text-accent-light decoration-accent-light/30 hover:decoration-accent-light;
+}
+
+.dark .chat-markdown code {
+  @apply bg-accent-light/10 text-accent-light;
+}
+
+/* Custom focus ring for accessibility */
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-accent/50;
+}
+
+.dark :focus-visible {
+  @apply outline-accent-light/50;
 }

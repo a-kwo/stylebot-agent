@@ -225,10 +225,12 @@ def search_replacement_image(
     style_tags: list[str],
     label: str,
     category: str,
+    orientation: str = "squarish",
 ) -> str | None:
     """Search Unsplash for a replacement image that matches the style tags.
 
     Returns the best-matching image URL or None if no good match found.
+    ``orientation`` can be "squarish" (chat 400x400) or "portrait" (tree 400x500).
     """
     unsplash_key = os.environ.get("UNSPLASH_ACCESS_KEY")
     if not unsplash_key:
@@ -241,7 +243,7 @@ def search_replacement_image(
         params={
             "query": query,
             "per_page": 10,
-            "orientation": "squarish",
+            "orientation": orientation,
         },
         headers={"Authorization": f"Client-ID {unsplash_key}"},
         timeout=15,
