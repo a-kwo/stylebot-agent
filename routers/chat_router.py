@@ -24,10 +24,23 @@ def chat(req: ChatRequest, user_id: int = Depends(get_current_user), db=Depends(
 def chat_stream(
     message: str = Query(..., min_length=1),
     user_id: int = Depends(get_current_user),
-    db=Depends(get_db),
 ):
+    from database import get_connection
+
+    def generate():
+        import json as _json
+        db = get_connection()
+        try:
+            for chunk in stream_agent_turn(user_id, message.strip(), db):
+                yield chunk
+        except Exception as e:
+            yield f"event: error\ndata: {_json.dumps({'message': str(e)})}\n\n"
+            yield f"event: done\ndata: {{}}\n\n"
+        finally:
+            db.close()
+
     return StreamingResponse(
-        stream_agent_turn(user_id, message.strip(), db),
+        generate(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -42,8 +55,11 @@ def submit_feedback(req: FeedbackRequest, user_id: int = Depends(get_current_use
     if req.feedback not in ("like", "dislike"):
         raise HTTPException(400, "Feedback must be 'like' or 'dislike'")
     db.execute(
-        "INSERT INTO recommendation_feedback (user_id, product_title, feedback) VALUES (?, ?, ?)",
-        (user_id, req.product_title, req.feedback),
+        """INSERT INTO recommendation_feedback
+           (user_id, product_title, feedback, price, category, seller, color, search_query, image_url)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (user_id, req.product_title, req.feedback,
+         req.price, req.category, req.seller, req.color, req.search_query, req.image_url),
     )
     db.commit()
     return {"status": "ok"}

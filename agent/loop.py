@@ -8,6 +8,7 @@ from agent.tools import TOOLS
 from agent.tool_handlers import dispatch_tool, set_recent_search_products
 from agent.system_prompt import build_system_prompt
 from services.profile_service import get_profile, update_profile, get_wardrobe_summary
+from services.vector_refinement import maybe_refine_vector
 
 MAX_ITERATIONS = 10
 MODEL = "claude-sonnet-4-6"
@@ -219,7 +220,12 @@ Respond with JSON only (no markdown fencing):
     "fit_preferences": [],
     "notes": ""
   }},
-  "has_updates": false
+  "has_updates": false,
+  "behavioral_signals": {{
+    "price_reaction": null,
+    "category_interest": [],
+    "engagement_level": null
+  }}
 }}
 
 Rules:
@@ -227,7 +233,12 @@ Rules:
 - Set has_updates to true only if at least one field has content.
 - For notes, write a brief observation (prefix not needed, it will be added automatically).
 - Do NOT repeat things the agent already explicitly saved via update_profile.
-- Be conservative — only extract clear signals, not guesses."""
+- Be conservative — only extract clear signals, not guesses.
+
+Behavioral signals (detect from tone and context, not explicit statements):
+- price_reaction: null if unclear. "budget_conscious" if the user balks at prices, asks for cheaper options, or emphasizes deals. "comfortable" if they accept prices without concern. "willing_to_splurge" if they actively seek premium/luxury items.
+- category_interest: list of clothing categories (e.g. "outerwear", "sneakers", "blazers") the user showed genuine interest in this turn. Empty if none.
+- engagement_level: null if unclear. "high" if the user is enthusiastic, asks follow-up questions, or explores options eagerly. "low" if responses are short, disengaged, or dismissive. Do NOT set "medium" — leave null instead."""
 
 
 def _reflect_on_turn(user_id: int, user_message: str, assistant_text: str, db):
@@ -245,15 +256,35 @@ def _reflect_on_turn(user_id: int, user_message: str, assistant_text: str, db):
         )
         raw = response.content[0].text.strip()
         data = json.loads(raw)
-        if not data.get("has_updates"):
-            return
 
-        updates = data.get("profile_updates", {})
-        if updates.get("notes"):
-            updates["notes"] = f"[reflection] {updates['notes']}"
-        updates = {k: v for k, v in updates.items() if v}
-        if updates:
-            update_profile(user_id, updates, db)
+        # Process standard profile updates
+        if data.get("has_updates"):
+            updates = data.get("profile_updates", {})
+            if updates.get("notes"):
+                updates["notes"] = f"[reflection] {updates['notes']}"
+            updates = {k: v for k, v in updates.items() if v}
+            if updates:
+                update_profile(user_id, updates, db)
+
+        # Process behavioral signals (backward compatible — missing key is fine)
+        behavioral = data.get("behavioral_signals")
+        if behavioral:
+            notes_parts = []
+
+            price_reaction = behavioral.get("price_reaction")
+            if price_reaction:
+                notes_parts.append(f"[behavioral] Price sensitivity: {price_reaction}")
+
+            category_interest = behavioral.get("category_interest", [])
+            if category_interest:
+                notes_parts.append(f"[behavioral] Showed interest in: {', '.join(category_interest)}")
+
+            engagement = behavioral.get("engagement_level")
+            if engagement and engagement != "medium":
+                notes_parts.append(f"[behavioral] Engagement level: {engagement}")
+
+            for note in notes_parts:
+                update_profile(user_id, {"notes": note}, db)
     except Exception:
         pass
 
@@ -306,6 +337,7 @@ def run_agent_turn(user_id: int, user_message: str, db) -> list[dict]:
                 if hasattr(b, "type") and b.type == "text"
             )
             _reflect_on_turn(user_id, user_message, assistant_text, db)
+            maybe_refine_vector(user_id, db)
             _maybe_summarize(user_id, db)
 
             return blocks
@@ -371,23 +403,35 @@ def stream_agent_turn(user_id: int, user_message: str, db) -> Generator[str, Non
     product_results: list[dict] = []
     quiz_results: list[dict] = []
     full_assistant_text = ""
+    has_streamed_text = False
 
     for _ in range(MAX_ITERATIONS):
         # Check if this iteration might be a tool-use round or final text
         # We'll stream the response and handle both cases
-        with client.messages.stream(
-            model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=system_prompt,
-            tools=TOOLS,
-            messages=messages,
-        ) as stream:
+        try:
+            stream_ctx = client.messages.stream(
+                model=MODEL,
+                max_tokens=MAX_TOKENS,
+                system=system_prompt,
+                tools=TOOLS,
+                messages=messages,
+            )
+        except Exception as e:
+            yield sse("error", {"message": f"Failed to connect to AI: {e}"})
+            yield sse("done", {})
+            return
+
+        try:
+          with stream_ctx as stream:
             collected_content = []
             current_text = ""
 
             for event in stream:
                 if event.type == "content_block_start":
                     if event.content_block.type == "text":
+                        # Add separator between text from different iterations
+                        if has_streamed_text:
+                            yield sse("token", {"text": "\n\n"})
                         current_text = ""
                     elif event.content_block.type == "tool_use":
                         yield sse("tool_status", {
@@ -397,10 +441,15 @@ def stream_agent_turn(user_id: int, user_message: str, db) -> Generator[str, Non
                 elif event.type == "content_block_delta":
                     if event.delta.type == "text_delta":
                         current_text += event.delta.text
+                        has_streamed_text = True
                         yield sse("token", {"text": event.delta.text})
 
             # Get the final message
             response = stream.get_final_message()
+        except Exception as e:
+            yield sse("error", {"message": f"AI error: {e}"})
+            yield sse("done", {})
+            return
 
         if response.stop_reason == "end_turn":
             serialized = _to_serializable(response.content)
@@ -428,6 +477,7 @@ def stream_agent_turn(user_id: int, user_message: str, db) -> Generator[str, Non
                 if hasattr(b, "type") and b.type == "text"
             )
             _reflect_on_turn(user_id, user_message, assistant_text, db)
+            maybe_refine_vector(user_id, db)
             _maybe_summarize(user_id, db)
             return
 

@@ -45,7 +45,12 @@ uvicorn main:app --reload
 
 ## Development workflow
 
-- **Test-driven fixes**: When fixing bugs or implementing requested changes, always write tests first that reproduce the issue (and confirm they fail), then implement the fix to make the tests pass.
+- **Test-driven development (TDD)**: All bug fixes and new features MUST follow this strict process:
+  1. **Write tests first** — Write unit/integration tests that cover the expected behavior for the fix or feature.
+  2. **Verify tests fail** — Run the tests and confirm they fail (red phase). If tests pass before any implementation, the tests are not testing the right thing — revise them.
+  3. **Implement the change** — Write the minimum code needed to make the failing tests pass.
+  4. **Verify tests pass** — Run the tests again and confirm they all pass (green phase).
+  5. **Do not skip steps** — Never implement a fix or feature without first having a failing test that proves the need for the change.
 
 ## Key conventions
 

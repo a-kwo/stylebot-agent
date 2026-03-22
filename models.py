@@ -46,6 +46,12 @@ class WardrobeItem(BaseModel):
 class FeedbackRequest(BaseModel):
     product_title: str
     feedback: str  # "like" or "dislike"
+    price: Optional[str] = None
+    category: Optional[str] = None
+    seller: Optional[str] = None
+    color: Optional[str] = None
+    search_query: Optional[str] = None
+    image_url: Optional[str] = None
 
 
 class ProfileData(BaseModel):

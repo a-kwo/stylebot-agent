@@ -1,7 +1,9 @@
 import json
 
 from services.profile_service import get_profile, update_profile
-from services.shopping import search_products as shopping_search
+from services.shopping import search_products as shopping_search, filter_results
+from services.style_translator import classify_color_temperature, CULTURAL_REF_BRANDS
+from services.product_ranker import rank_products
 from services.quiz_service import get_chat_question
 from services.outfit_service import (
     create_outfit as svc_create_outfit,
@@ -195,15 +197,110 @@ def _add_to_wardrobe(user_id: int, tool_input: dict, db) -> str:
     return json.dumps({"status": "added", "id": cur.lastrowid, "name": name})
 
 
+def _enhance_query(
+    query: str,
+    profile: dict,
+    explicit_min: float | None,
+    explicit_max: float | None,
+) -> dict:
+    """Auto-inject profile data into a search query.
+
+    Returns dict with: query, min_price, max_price, warnings.
+    """
+    warnings: list[str] = []
+    enhanced_query = query
+
+    # Check for avoided brands
+    avoided_brands = profile.get("avoided_brands", [])
+    if isinstance(avoided_brands, str):
+        try:
+            avoided_brands = json.loads(avoided_brands)
+        except Exception:
+            avoided_brands = []
+    if isinstance(avoided_brands, dict):
+        avoided_brands = list(avoided_brands.keys())
+    for brand in avoided_brands:
+        if brand.lower() in query.lower():
+            warnings.append(
+                f"Warning: '{brand}' is in the user's avoided brands list. Consider alternative brands."
+            )
+
+    # Append preferred brands if no brand already in query
+    preferred_brands = profile.get("preferred_brands", [])
+    if isinstance(preferred_brands, str):
+        try:
+            preferred_brands = json.loads(preferred_brands)
+        except Exception:
+            preferred_brands = []
+    if isinstance(preferred_brands, dict):
+        # Sort by weight descending for priority
+        preferred_brands = sorted(preferred_brands.keys(), key=lambda b: preferred_brands[b], reverse=True)
+    if preferred_brands:
+        # Check if query already contains any known brand (preferred, avoided, or common)
+        from services.style_translator import CULTURAL_REF_BRANDS
+        known_brands = list(preferred_brands) + list(avoided_brands)
+        for brand_list in CULTURAL_REF_BRANDS.values():
+            known_brands.extend(brand_list)
+        query_lower = query.lower()
+        has_brand = any(b.lower() in query_lower for b in known_brands if b)
+        if not has_brand:
+            # Append top 1-2 preferred brands
+            top_brands = preferred_brands[:2]
+            enhanced_query = f"{enhanced_query} {' '.join(top_brands)}"
+
+    # Append fit preference if not already present
+    fit_preferences = profile.get("fit_preferences", [])
+    if isinstance(fit_preferences, str):
+        try:
+            fit_preferences = json.loads(fit_preferences)
+        except Exception:
+            fit_preferences = []
+    if isinstance(fit_preferences, dict):
+        fit_preferences = sorted(fit_preferences.keys(), key=lambda f: fit_preferences[f], reverse=True)
+    if fit_preferences:
+        dominant_fit = fit_preferences[0]
+        if dominant_fit.lower() not in enhanced_query.lower():
+            enhanced_query = f"{enhanced_query} {dominant_fit}"
+
+    # Inject budget as price params if not explicitly provided
+    min_price = explicit_min
+    max_price = explicit_max
+
+    budget_min = profile.get("budget_min")
+    budget_max = profile.get("budget_max")
+
+    if min_price is None and budget_min and budget_min > 0:
+        min_price = budget_min
+    if max_price is None and budget_max and budget_max > 0:
+        max_price = budget_max
+
+    return {
+        "query": enhanced_query,
+        "min_price": min_price,
+        "max_price": max_price,
+        "warnings": warnings,
+    }
+
+
 def _search_products(user_id: int, tool_input: dict, db=None) -> str:
     query = tool_input.get("query", "").strip()
     if not query:
         return json.dumps({"error": "query is required"})
 
-    # Prepend gender to query if not already present (safety net)
+    # Enhance query with profile data
+    explicit_min = tool_input.get("min_price")
+    explicit_max = tool_input.get("max_price")
+    enhancement_warnings = []
+    avoided_brands = []
+    avoided_colors = []
+    profile = {}
+    requested_limit = tool_input.get("limit", 6)
+
     if db is not None:
         try:
             profile = get_profile(user_id, db)
+
+            # Prepend gender if not already present
             gender = (profile.get("gender") or "").strip().lower()
             if gender and gender not in ("unknown", "prefer not to say"):
                 gender_terms = {"male": ["male", "men", "man", "mens", "men's"],
@@ -215,24 +312,88 @@ def _search_products(user_id: int, tool_input: dict, db=None) -> str:
                     prefix = "mens" if gender == "male" else "womens" if gender == "female" else ""
                     if prefix:
                         query = f"{prefix} {query}"
+
+            # Auto-inject brands, budget, fit preferences
+            enhanced = _enhance_query(query, profile, explicit_min, explicit_max)
+            query = enhanced["query"]
+            explicit_min = enhanced["min_price"]
+            explicit_max = enhanced["max_price"]
+            enhancement_warnings = enhanced["warnings"]
+
+            # Collect avoided lists for post-filtering
+            avoided_brands = profile.get("avoided_brands", [])
+            if isinstance(avoided_brands, str):
+                try:
+                    avoided_brands = json.loads(avoided_brands)
+                except Exception:
+                    avoided_brands = []
+            if isinstance(avoided_brands, dict):
+                avoided_brands = list(avoided_brands.keys())
+            avoided_colors = profile.get("avoided_colors", [])
+            if isinstance(avoided_colors, str):
+                try:
+                    avoided_colors = json.loads(avoided_colors)
+                except Exception:
+                    avoided_colors = []
+            if isinstance(avoided_colors, dict):
+                avoided_colors = list(avoided_colors.keys())
         except Exception:
             pass  # Don't break search if profile lookup fails
 
     results = shopping_search(
         user_id=user_id,
         query=query,
-        min_price=tool_input.get("min_price"),
-        max_price=tool_input.get("max_price"),
-        limit=tool_input.get("limit", 6),
+        min_price=explicit_min,
+        max_price=explicit_max,
+        limit=requested_limit,
     )
-    return json.dumps({
+
+    # Post-filter results to remove avoided brands/colors
+    if avoided_brands or avoided_colors:
+        results = filter_results(results, avoided_brands, avoided_colors)
+
+        # If too many filtered, retry with larger limit
+        if len(results) < requested_limit // 2 and requested_limit <= 6:
+            expanded = shopping_search(
+                user_id=user_id,
+                query=query,
+                min_price=explicit_min,
+                max_price=explicit_max,
+                limit=min(requested_limit * 2, 10),
+            )
+            results = filter_results(expanded, avoided_brands, avoided_colors)[:requested_limit]
+
+    # Re-rank results based on user preferences, wardrobe, and feedback
+    if db is not None:
+        try:
+            wardrobe_items = db.execute(
+                "SELECT name, category, color, brand FROM wardrobe WHERE user_id = ?",
+                (user_id,),
+            ).fetchall()
+            feedback_rows = db.execute(
+                "SELECT product_title, feedback, price, color, seller FROM recommendation_feedback WHERE user_id = ? ORDER BY created_at DESC LIMIT 30",
+                (user_id,),
+            ).fetchall()
+            results = rank_products(
+                results,
+                profile,
+                [dict(r) for r in wardrobe_items],
+                [dict(r) for r in feedback_rows],
+            )
+        except Exception:
+            pass  # Don't break search if ranking fails
+
+    response = {
         "products": results,
         "display_note": (
             "These products will be displayed to the user as interactive cards with images, "
             "prices, and links. Do NOT list, number, or describe individual products in your "
             "response. Just write 1-2 sentences of context about the results overall."
         ),
-    })
+    }
+    if enhancement_warnings:
+        response["warnings"] = enhancement_warnings
+    return json.dumps(response)
 
 
 def _create_outfit(user_id: int, tool_input: dict, db) -> str:
@@ -330,13 +491,16 @@ def _analyze_wardrobe(user_id: int, db) -> str:
     all_categories = {"tops", "bottoms", "shoes", "outerwear", "accessories", "dresses"}
 
     rows = db.execute(
-        "SELECT category, color FROM wardrobe WHERE user_id = ? ORDER BY category",
+        "SELECT category, color, brand, tags FROM wardrobe WHERE user_id = ? ORDER BY category",
         (user_id,),
     ).fetchall()
 
     # Count by category
     category_counts: dict[str, int] = {cat: 0 for cat in all_categories}
     colors = []
+    color_temp_counts = {"warm": 0, "cool": 0, "neutral": 0}
+    brands = []
+
     for row in rows:
         cat = row["category"]
         if cat in category_counts:
@@ -344,14 +508,80 @@ def _analyze_wardrobe(user_id: int, db) -> str:
         color = row["color"]
         if color and color not in colors:
             colors.append(color)
+        # Color temperature
+        if color:
+            temp = classify_color_temperature(color)
+            color_temp_counts[temp] += 1
+        # Collect brands
+        brand = row["brand"]
+        if brand and brand not in brands:
+            brands.append(brand)
 
     missing = [cat for cat, count in sorted(category_counts.items()) if count == 0]
+
+    # ── Brand alignment with style vector ────────────────────────────────
+    aligned_brands = []
+    unaligned_brands = []
+
+    # Load profile for style vector and occasions (gracefully handle missing table/columns)
+    try:
+        profile_row = db.execute(
+            "SELECT style_vector, occasions FROM profiles WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+    except Exception:
+        profile_row = None
+
+    if profile_row and brands:
+        style_vector_raw = profile_row["style_vector"] or "{}"
+        try:
+            style_vector = json.loads(style_vector_raw) if isinstance(style_vector_raw, str) else (style_vector_raw or {})
+        except Exception:
+            style_vector = {}
+
+        primary_ref = style_vector.get("primary_cultural_ref")
+        if primary_ref and primary_ref in CULTURAL_REF_BRANDS:
+            ref_brands_lower = [b.lower() for b in CULTURAL_REF_BRANDS[primary_ref]]
+            for brand in brands:
+                if brand.lower() in ref_brands_lower:
+                    aligned_brands.append(brand)
+                else:
+                    unaligned_brands.append(brand)
+
+    # ── Occasion gaps ────────────────────────────────────────────────────
+    OCCASION_REQUIRED_CATEGORIES: dict[str, list[str]] = {
+        "formal": ["tops", "bottoms", "shoes", "outerwear"],
+        "casual": ["tops", "bottoms", "shoes"],
+        "business": ["tops", "bottoms", "shoes", "outerwear"],
+        "date": ["tops", "bottoms", "shoes"],
+        "active": ["tops", "bottoms", "shoes"],
+        "travel": ["tops", "bottoms", "shoes", "outerwear"],
+    }
+
+    occasion_gaps: dict[str, list[str]] = {}
+    if profile_row:
+        occasions_raw = profile_row["occasions"] or "[]"
+        try:
+            occasions = json.loads(occasions_raw) if isinstance(occasions_raw, str) else (occasions_raw or [])
+        except Exception:
+            occasions = []
+
+        owned_categories = {cat for cat, count in category_counts.items() if count > 0}
+        for occasion in occasions:
+            occ_lower = occasion.lower()
+            required = OCCASION_REQUIRED_CATEGORIES.get(occ_lower, [])
+            gaps = [cat for cat in required if cat not in owned_categories]
+            if gaps:
+                occasion_gaps[occasion] = gaps
 
     return json.dumps({
         "total_items": len(rows),
         "categories": category_counts,
         "missing_categories": missing,
         "colors": colors,
+        "color_temperature": color_temp_counts,
+        "brand_alignment": {"aligned": aligned_brands, "unaligned": unaligned_brands},
+        "occasion_gaps": occasion_gaps,
     })
 
 

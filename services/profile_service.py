@@ -1,12 +1,17 @@
 import json
-from datetime import date
+from datetime import date, datetime
 
-WEIGHTED_FIELDS = ["style_adjectives"]
-ARRAY_FIELDS = [
+WEIGHTED_FIELDS = [
+    "style_adjectives",
     "preferred_colors", "avoided_colors",
-    "preferred_brands", "avoided_brands", "occasions", "fit_preferences",
+    "preferred_brands", "avoided_brands",
+    "occasions", "fit_preferences",
 ]
+ARRAY_FIELDS = []
 SCALAR_FIELDS = ["size_tops", "size_bottoms", "size_shoes", "budget_min", "budget_max"]
+
+DECAY_HALF_LIFE_DAYS = 90
+MIN_WEIGHT = 0.1
 
 
 def _migrate_weighted(raw: str) -> dict:
@@ -22,14 +27,43 @@ def _migrate_weighted(raw: str) -> dict:
     return {}
 
 
+def _apply_decay(weights: dict, days_elapsed: float) -> dict:
+    """Apply time-decay to all weights. Prune below MIN_WEIGHT."""
+    if days_elapsed <= 0 or not weights:
+        return weights
+    factor = 0.5 ** (days_elapsed / DECAY_HALF_LIFE_DAYS)
+    decayed = {}
+    for k, v in weights.items():
+        new_val = v * factor
+        if new_val >= MIN_WEIGHT:
+            decayed[k] = round(new_val, 2)
+    return decayed
+
+
+def _days_since(updated_at_str: str | None) -> float:
+    """Compute days elapsed since updated_at timestamp."""
+    if not updated_at_str:
+        return 0
+    try:
+        updated = datetime.strptime(updated_at_str, "%Y-%m-%d %H:%M:%S")
+        return max(0, (datetime.now() - updated).total_seconds() / 86400)
+    except Exception:
+        return 0
+
+
 def get_profile(user_id: int, db) -> dict:
     row = db.execute("SELECT * FROM profiles WHERE user_id = ?", (user_id,)).fetchone()
     if row is None:
         return {}
 
     profile = dict(row)
+
+    # Compute days since last update for decay
+    days_elapsed = _days_since(profile.get("updated_at"))
+
     for field in WEIGHTED_FIELDS:
-        profile[field] = _migrate_weighted(profile.get(field) or "[]")
+        raw = _migrate_weighted(profile.get(field) or "[]")
+        profile[field] = _apply_decay(raw, days_elapsed)
     for field in ARRAY_FIELDS:
         try:
             profile[field] = json.loads(profile.get(field) or "[]")
@@ -53,6 +87,21 @@ def update_profile(user_id: int, updates: dict, db) -> dict:
             new_vals = updates[field] if isinstance(updates[field], list) else list(updates[field])
             for v in new_vals:
                 current_weights[v] = current_weights.get(v, 0) + 1
+            set_clauses.append(f"{field} = ?")
+            params.append(json.dumps(current_weights))
+
+    # Handle decrement fields
+    for field in WEIGHTED_FIELDS:
+        decrement_key = f"decrement_{field}"
+        if decrement_key in updates and updates[decrement_key]:
+            current_weights = current.get(field, {})
+            if not isinstance(current_weights, dict):
+                current_weights = _migrate_weighted(json.dumps(current_weights))
+            for v in updates[decrement_key]:
+                if v in current_weights:
+                    current_weights[v] = current_weights[v] - 1
+                    if current_weights[v] < MIN_WEIGHT:
+                        del current_weights[v]
             set_clauses.append(f"{field} = ?")
             params.append(json.dumps(current_weights))
 

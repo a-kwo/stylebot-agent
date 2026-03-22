@@ -80,3 +80,46 @@ def search_products(
             break
 
     return items
+
+
+def filter_results(
+    items: list[dict],
+    avoided_brands: list[str],
+    avoided_colors: list[str],
+) -> list[dict]:
+    """Filter search results to remove products matching avoided brands or colors.
+
+    Brand matching: case-insensitive substring against title + seller.
+    Color matching: word-boundary regex against title only (prevents
+    "blue" from matching "bluetooth").
+    """
+    if not avoided_brands and not avoided_colors:
+        return items
+
+    # Pre-compile color patterns with word boundaries
+    color_patterns = []
+    for color in avoided_colors:
+        if color:
+            pattern = re.compile(r"\b" + re.escape(color) + r"\b", re.IGNORECASE)
+            color_patterns.append(pattern)
+
+    avoided_brands_lower = [b.lower() for b in avoided_brands if b]
+
+    filtered = []
+    for item in items:
+        title = (item.get("title") or "").lower()
+        seller = (item.get("seller") or "").lower()
+        combined = f"{title} {seller}"
+
+        # Check avoided brands (substring match on title + seller)
+        if any(brand in combined for brand in avoided_brands_lower):
+            continue
+
+        # Check avoided colors (word boundary match on title only)
+        title_raw = item.get("title") or ""
+        if any(p.search(title_raw) for p in color_patterns):
+            continue
+
+        filtered.append(item)
+
+    return filtered

@@ -23,7 +23,11 @@ export default function ProductCard({ item, index = 0 }: { item: Product; index?
 
   const handleFeedback = (type: 'like' | 'dislike') => {
     setFeedback(type);
-    submitFeedback(item.title, type).catch(() => {});
+    submitFeedback(item.title, type, {
+      price: item.price != null ? String(item.price) : undefined,
+      seller: item.seller || undefined,
+      image_url: item.image_url || undefined,
+    }).catch(() => {});
   };
 
   return (

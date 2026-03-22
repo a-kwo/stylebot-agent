@@ -20,6 +20,7 @@ def _migrate_profiles(conn):
         ("climate", "TEXT"),
         ("onboarded", "INTEGER DEFAULT 0"),
         ("style_quiz", "TEXT DEFAULT '[]'"),
+        ("style_vector", "TEXT DEFAULT '{}'"),
     ]
     for col_name, col_type in new_columns:
         try:
@@ -34,6 +35,37 @@ def _migrate_wardrobe(conn):
         conn.execute("ALTER TABLE wardrobe ADD COLUMN local_image_path TEXT")
     except Exception:
         pass  # column already exists
+
+
+def _migrate_feedback(conn):
+    """Add enriched metadata columns to recommendation_feedback (safe to re-run)."""
+    new_columns = [
+        ("price", "TEXT"),
+        ("category", "TEXT"),
+        ("seller", "TEXT"),
+        ("color", "TEXT"),
+        ("search_query", "TEXT"),
+        ("image_url", "TEXT"),
+    ]
+    for col_name, col_type in new_columns:
+        try:
+            conn.execute(f"ALTER TABLE recommendation_feedback ADD COLUMN {col_name} {col_type}")
+        except Exception:
+            pass  # column already exists
+
+
+def _migrate_vector_refinement(conn):
+    """Add vector refinement columns to profiles (safe to re-run)."""
+    new_columns = [
+        ("feedback_vector", "TEXT DEFAULT '{}'"),
+        ("refined_style_vector", "TEXT DEFAULT '{}'"),
+        ("feedback_vector_count", "INTEGER DEFAULT 0"),
+    ]
+    for col_name, col_type in new_columns:
+        try:
+            conn.execute(f"ALTER TABLE profiles ADD COLUMN {col_name} {col_type}")
+        except Exception:
+            pass  # column already exists
 
 
 def init_db():
@@ -128,6 +160,8 @@ def init_db():
     conn.commit()
     _migrate_profiles(conn)
     _migrate_wardrobe(conn)
+    _migrate_feedback(conn)
+    _migrate_vector_refinement(conn)
     conn.commit()
     conn.close()
 

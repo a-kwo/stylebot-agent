@@ -16,6 +16,7 @@ interface Message {
   quizzes?: any[];
   toolStatus?: string;
   streaming?: boolean;
+  actions?: { label: string; message: string }[];
 }
 
 function ThinkingDots() {
@@ -40,16 +41,14 @@ function ThinkingDots() {
 export default function ChatPage() {
   const router = useRouter();
   const { authenticated, onboarded, loading: authLoading } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      text: "Hey! I'm StyleBot, your personal styling assistant. What can I help you with today?",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const tokenBufferRef = useRef('');
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -69,7 +68,22 @@ export default function ChatPage() {
         const turns = history.filter(
           (m: any) => m.role === 'user' || m.role === 'assistant'
         );
-        if (turns.length === 0) return;
+
+        if (turns.length === 0) {
+          // First-time user — show welcome with action buttons
+          setMessages([
+            {
+              role: 'assistant',
+              text: "Hey! I'm StyleBot — your personal styling assistant. Ready to find some pieces that match your vibe?",
+              actions: [
+                { label: "Sure, let's get started!", message: "Show me some pieces you'd pick for me based on my style profile. No questions, just show me what you've got!" },
+                { label: "No, let's chat first", message: "Let's just chat first" },
+              ],
+            },
+          ]);
+          setHistoryLoaded(true);
+          return;
+        }
 
         const loaded: Message[] = [];
         for (const msg of history) {
@@ -107,8 +121,9 @@ export default function ChatPage() {
           }
         }
         if (loaded.length > 0) setMessages(loaded);
+        setHistoryLoaded(true);
       })
-      .catch(() => {});
+      .catch(() => { setHistoryLoaded(true); });
   }, [authenticated, onboarded]);
 
   useEffect(() => {
@@ -117,12 +132,14 @@ export default function ChatPage() {
 
   if (!authenticated || onboarded !== true) return null;
 
-  const handleSend = (e: FormEvent) => {
-    e.preventDefault();
-    const text = input.trim();
+  const sendMessage = (text: string) => {
     if (!text || sending) return;
 
-    setInput('');
+    // Remove action buttons from all messages once user acts
+    setMessages((prev) =>
+      prev.map((m) => (m.actions ? { ...m, actions: undefined } : m))
+    );
+
     setSending(true);
 
     setMessages((prev) => [
@@ -131,19 +148,32 @@ export default function ChatPage() {
       { role: 'assistant', text: '', streaming: true },
     ]);
 
+    const flushTokenBuffer = () => {
+      const buffered = tokenBufferRef.current;
+      if (!buffered) return;
+      tokenBufferRef.current = '';
+      setMessages((prev) => {
+        const updated = [...prev];
+        const last = updated[updated.length - 1];
+        if (last.role === 'assistant') {
+          updated[updated.length - 1] = {
+            ...last,
+            text: (last.text || '') + buffered,
+          };
+        }
+        return updated;
+      });
+    };
+
     abortRef.current = streamChat(text, {
       onToken(token) {
-        setMessages((prev) => {
-          const updated = [...prev];
-          const last = updated[updated.length - 1];
-          if (last.role === 'assistant') {
-            updated[updated.length - 1] = {
-              ...last,
-              text: (last.text || '') + token,
-            };
-          }
-          return updated;
-        });
+        tokenBufferRef.current += token;
+        if (!flushTimerRef.current) {
+          flushTimerRef.current = setTimeout(() => {
+            flushTimerRef.current = null;
+            flushTokenBuffer();
+          }, 30);
+        }
       },
       onProducts(items) {
         setMessages((prev) => {
@@ -188,6 +218,7 @@ export default function ChatPage() {
         });
       },
       onError(message) {
+        flushTokenBuffer();
         setMessages((prev) => {
           const updated = [...prev];
           const last = updated[updated.length - 1];
@@ -202,6 +233,7 @@ export default function ChatPage() {
         });
       },
       onDone() {
+        flushTokenBuffer();
         setMessages((prev) => {
           const updated = [...prev];
           const last = updated[updated.length - 1];
@@ -219,12 +251,25 @@ export default function ChatPage() {
     });
   };
 
+  const handleSend = (e: FormEvent) => {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text) return;
+    setInput('');
+    sendMessage(text);
+  };
+
+  const handleAction = (action: { label: string; message: string }) => {
+    sendMessage(action.message);
+  };
+
   return (
     <div className="flex flex-col h-screen">
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-2xl mx-auto flex flex-col gap-4">
-          {messages.length === 1 && messages[0].role === 'assistant' && (
+          {/* Hero for new users / single welcome message */}
+          {historyLoaded && messages.length === 1 && messages[0].role === 'assistant' && messages[0].actions && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -242,13 +287,6 @@ export default function ChatPage() {
               <p className="text-muted text-sm text-center max-w-xs leading-relaxed">
                 Outfit ideas, wardrobe advice, or discovering new pieces — I&apos;m here to help curate your look.
               </p>
-              <div className="flex gap-2 mt-6">
-                {['Outfit ideas', 'Style advice', 'Find pieces'].map((hint, i) => (
-                  <span key={i} className="text-[11px] font-medium px-3 py-1.5 rounded-full bg-accent/5 text-accent/60 dark:bg-accent/10 dark:text-accent-light/60">
-                    {hint}
-                  </span>
-                ))}
-              </div>
             </motion.div>
           )}
 
@@ -280,8 +318,30 @@ export default function ChatPage() {
                     <div className="bg-white dark:bg-surface-dark-1 border-l-2 border-accent/30 dark:border-accent-light/30 px-4 py-3 rounded-2xl rounded-bl-md text-sm chat-markdown whitespace-pre-wrap shadow-sm">
                       {msg.text}
                       {msg.streaming && (
-                        <span className="inline-block w-1.5 h-4 bg-accent dark:bg-accent-light ml-0.5 animate-pulse rounded-sm" />
+                        <span className="inline-block w-0.5 h-[1.1em] bg-ink/30 dark:bg-zinc-400/40 ml-0.5 animate-pulse rounded-full align-text-bottom" />
                       )}
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  {msg.actions && msg.actions.length > 0 && !sending && (
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {msg.actions.map((action, j) => (
+                        <motion.button
+                          key={j}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 + j * 0.1, duration: 0.3 }}
+                          onClick={() => handleAction(action)}
+                          className={`text-sm font-medium px-4 py-2.5 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-95 ${
+                            j === 0
+                              ? 'bg-gradient-to-r from-accent to-accent-dark text-white shadow-md shadow-accent/20 hover:shadow-lg hover:shadow-accent/30'
+                              : 'border border-accent/30 dark:border-accent-light/30 text-accent dark:text-accent-light bg-accent/5 dark:bg-accent-light/5 hover:bg-accent/10 dark:hover:bg-accent-light/10'
+                          }`}
+                        >
+                          {action.label}
+                        </motion.button>
+                      ))}
                     </div>
                   )}
 

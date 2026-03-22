@@ -85,10 +85,10 @@ export async function getOnboardingStatus(): Promise<boolean> {
   return !!data.onboarded;
 }
 
-export async function submitOnboarding(gender: string, age: number, climate: string) {
+export async function submitOnboarding(gender: string, age: number, climate?: string) {
   const res = await apiFetch('/profile/onboard', {
     method: 'POST',
-    body: JSON.stringify({ gender, age, climate }),
+    body: JSON.stringify({ gender, age, climate: climate || '' }),
   });
   if (!res.ok) throw new Error('Failed to save');
   return res.json();
@@ -123,6 +123,28 @@ export async function submitQuizAnswer(answer: {
   });
 }
 
+// V2 Quiz
+export async function getQuizV2() {
+  const res = await apiFetch('/quiz/v2');
+  return res.json();
+}
+
+export async function submitStyleQuizV2(
+  answers: Array<{
+    question_id: string;
+    option_id: string;
+    vector_scores: Record<string, number>;
+  }>,
+  selected_occasions: string[]
+) {
+  const res = await apiFetch('/profile/style-quiz-v2', {
+    method: 'POST',
+    body: JSON.stringify({ answers, selected_occasions }),
+  });
+  if (!res.ok) throw new Error('Failed to save quiz');
+  return res.json();
+}
+
 export async function getConversations() {
   const res = await apiFetch('/conversations');
   return res.json();
@@ -140,10 +162,14 @@ export async function sendChat(message: string) {
   return res.json();
 }
 
-export async function submitFeedback(productTitle: string, feedback: 'like' | 'dislike') {
+export async function submitFeedback(
+  productTitle: string,
+  feedback: 'like' | 'dislike',
+  meta?: { price?: string; seller?: string; color?: string; image_url?: string; search_query?: string },
+) {
   return apiFetch('/feedback', {
     method: 'POST',
-    body: JSON.stringify({ product_title: productTitle, feedback }),
+    body: JSON.stringify({ product_title: productTitle, feedback, ...meta }),
   });
 }
 
@@ -228,7 +254,8 @@ export function streamChat(
     callbacks.onDone?.();
   }).catch((err) => {
     if (err.name !== 'AbortError') {
-      callbacks.onError?.(err.message);
+      console.error('[StreamChat] Error:', err);
+      callbacks.onError?.(err.message || 'Network error');
       callbacks.onDone?.();
     }
   });
