@@ -374,12 +374,23 @@ def compute_style_vector(answers: list[dict], selected_occasions: list[str]) -> 
     Returns:
         Style vector dict with all dimension scores.
     """
+    # Known nested groups — keys starting with these prefixes + underscore
+    # should be normalized to dot notation (e.g. cultural_ref_prep → cultural_ref.prep)
+    _NESTED_GROUPS = ("cultural_ref", "silhouette", "color")
+
     # Accumulate raw scores
     raw: dict[str, list[float]] = {}
 
     for answer in answers:
         scores = answer.get("vector_scores", {})
         for key, value in scores.items():
+            # Normalize underscore keys to dot notation
+            if "." not in key:
+                for group in _NESTED_GROUPS:
+                    prefix = group + "_"
+                    if key.startswith(prefix) and key != group:
+                        key = group + "." + key[len(prefix):]
+                        break
             raw.setdefault(key, []).append(value)
 
     # Average each dimension
