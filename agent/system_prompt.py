@@ -148,7 +148,7 @@ def build_system_prompt(profile: dict, wardrobe_summary: str, user_id: int = Non
 
         cr = style_vector.get("cultural_ref", {})
         primary_cr = style_vector.get("primary_cultural_ref", "unknown")
-        cr_labels = {"sport_street": "Sport/Street", "prep": "Old-Money/Prep", "clean_basic": "Clean Basic", "utility": "Workwear"}
+        cr_labels = {"sport_street": "Sport/Street", "prep": "Old-Money/Prep", "clean_basic": "Clean Basic", "utility": "Workwear", "vintage_street": "Vintage/Streetwear"}
 
         sil = style_vector.get("silhouette", {})
         color = style_vector.get("color", {})

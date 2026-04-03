@@ -124,9 +124,17 @@ MINIMALIST_VECTOR = {
 STREETWEAR_VECTOR = {
     "energy": 0.85,
     "primary_cultural_ref": "sport_street",
-    "cultural_ref": {"sport_street": 0.9, "prep": 0.0, "clean_basic": 0.1, "utility": 0.0},
+    "cultural_ref": {"sport_street": 0.9, "prep": 0.0, "clean_basic": 0.1, "utility": 0.0, "vintage_street": 0.0},
     "silhouette": {"structured": 0.0, "relaxed": 0.2, "oversized": 0.8},
     "color": {"temperature": -0.6, "range": 0.8, "expression": 0.9},
+}
+
+VINTAGE_STREET_VECTOR = {
+    "energy": 0.55,
+    "primary_cultural_ref": "vintage_street",
+    "cultural_ref": {"sport_street": 0.0, "prep": 0.0, "clean_basic": 0.0, "utility": 0.0, "vintage_street": 0.9},
+    "silhouette": {"structured": 0.0, "relaxed": 0.5, "oversized": 0.5},
+    "color": {"temperature": 0.1, "range": 0.6, "expression": 0.5},
 }
 
 
@@ -495,4 +503,35 @@ class TestAgentTurnUsesQuizData:
 
         assert prompts["minimalist"] != prompts["streetwear"], (
             "Different quiz answers must produce different system prompts"
+        )
+
+
+# ── Vintage/Streetwear dimension tests ───────────────────────────────────────
+
+class TestVintageStreetVector:
+    """vintage_street must surface as a distinct label and brand set in system prompts."""
+
+    def test_vintage_street_cultural_ref_in_prompt(self):
+        conn, user_id = _make_db(style_vector=VINTAGE_STREET_VECTOR)
+        profile = get_profile(user_id, conn)
+        prompt = build_system_prompt(profile, "", user_id, conn)
+        assert "Vintage" in prompt, (
+            "System prompt should display 'Vintage/Streetwear' for vintage_street primary_cultural_ref"
+        )
+
+    def test_vintage_street_brands_in_prompt(self):
+        conn, user_id = _make_db(style_vector=VINTAGE_STREET_VECTOR)
+        profile = get_profile(user_id, conn)
+        prompt = build_system_prompt(profile, "", user_id, conn)
+        assert any(brand in prompt for brand in ["Champion", "Levi", "Carhartt", "Supreme", "Dickies"]), (
+            "Vintage/Streetwear vector should inject vintage brands into system prompt"
+        )
+
+    def test_vintage_street_brands_differ_from_sport_street(self):
+        conn1, uid1 = _make_db(style_vector=STREETWEAR_VECTOR)
+        conn2, uid2 = _make_db(style_vector=VINTAGE_STREET_VECTOR)
+        prompt1 = build_system_prompt(get_profile(uid1, conn1), "", uid1, conn1)
+        prompt2 = build_system_prompt(get_profile(uid2, conn2), "", uid2, conn2)
+        assert prompt1 != prompt2, (
+            "sport_street and vintage_street vectors must produce different system prompts"
         )
