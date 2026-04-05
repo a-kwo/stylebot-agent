@@ -71,10 +71,10 @@ QUESTIONS = {
         "subtitle": "The culture that best represents how you dress",
         "options": [
             {
-                "id": "sport_street",
-                "label": "Sport / Street",
-                "image_url": "/static/quiz_images/v2__q2__sport-street.jpg",
-                "vector_scores": {"cultural_ref.sport_street": 1.0},
+                "id": "vintage_street",
+                "label": "Vintage/Streetwear",
+                "image_url": "/static/quiz_images/v2_q2_vintage-streetwear.jpg",
+                "vector_scores": {"cultural_ref.vintage_street": 1.0},
             },
             {
                 "id": "prep",
@@ -106,24 +106,24 @@ QUESTIONS = {
         "subtitle": "Same cultural space, different energy levels",
         "branch_on": "q2_cultural",
         "variants": {
-            "sport_street": [
+            "vintage_street": [
                 {
                     "id": "ss_subtle",
-                    "label": "Clean & Minimal",
-                    "image_url": "/static/quiz_images/v2__q3__ss-subtle.jpg",
-                    "vector_scores": {"energy": 0.2, "cultural_ref.sport_street": 0.5},
+                    "label": "Balanced Vintage Streetwear",
+                    "image_url": "/static/quiz_images/v2_q3_vintage-balanced.jpg",
+                    "vector_scores": {"energy": 0.2, "cultural_ref.vintage_street": 0.5},
                 },
                 {
                     "id": "ss_core",
-                    "label": "Core Streetwear",
-                    "image_url": "/static/quiz_images/v2__q3__ss-core.jpg",
-                    "vector_scores": {"energy": 0.55, "cultural_ref.sport_street": 0.5},
+                    "label": "Core Vintage Streetwear",
+                    "image_url": "/static/quiz_images/v2_q3_vintage-core.jpg",
+                    "vector_scores": {"energy": 0.55, "cultural_ref.vintage_street": 0.5},
                 },
                 {
                     "id": "ss_loud",
-                    "label": "Statement Pieces",
-                    "image_url": "/static/quiz_images/v2__q3__ss-loud.jpg",
-                    "vector_scores": {"energy": 0.9, "cultural_ref.sport_street": 0.5},
+                    "label": "Statement Vintage Streetwear",
+                    "image_url": "/static/quiz_images/v2_q3_vintage-statement.jpg",
+                    "vector_scores": {"energy": 0.9, "cultural_ref.vintage_street": 0.5},
                 },
             ],
             "prep": [
@@ -401,6 +401,7 @@ def compute_style_vector(answers: list[dict], selected_occasions: list[str]) -> 
             "prep": 0.0,
             "clean_basic": 0.0,
             "utility": 0.0,
+            "vintage_street": 0.0,
         },
         "silhouette": {
             "structured": 0.0,

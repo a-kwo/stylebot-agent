@@ -26,6 +26,10 @@ CULTURAL_REF_BRANDS: dict[str, list[str]] = {
         "Carhartt", "Filson", "Red Wing", "Dickies",
         "Stan Ray", "Patagonia", "Norse Projects",
     ],
+    "vintage_street": [
+        "Champion", "Levi's", "Carhartt", "Vintage Nike", "Stussy",
+        "Supreme", "Dickies",
+    ],
 }
 
 # ── Cultural reference → search keywords ─────────────────────────────────────
@@ -47,6 +51,10 @@ CULTURAL_REF_KEYWORDS: dict[str, list[str]] = {
         "workwear", "utility", "field jacket", "cargo pants",
         "boots", "heritage", "rugged",
     ],
+    "vintage_street": [
+        "vintage streetwear", "90s", "retro", "thrifted",
+        "deadstock", "archive", "vintage tee",
+    ],
 }
 
 # ── Cultural reference → materials ───────────────────────────────────────────
@@ -66,6 +74,10 @@ CULTURAL_REF_MATERIALS: dict[str, list[str]] = {
     "utility": [
         "canvas", "denim", "waxed cotton", "ripstop",
         "flannel", "heavy cotton twill",
+    ],
+    "vintage_street": [
+        "heavyweight cotton", "washed denim", "vintage fleece",
+        "brushed cotton", "distressed fabric",
     ],
 }
 

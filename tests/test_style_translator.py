@@ -11,6 +11,7 @@ def _make_vector(
     prep=0.0,
     clean_basic=0.0,
     utility=0.0,
+    vintage_street=0.0,
     primary_cultural_ref="none",
     structured=0.0,
     relaxed=0.0,
@@ -27,6 +28,7 @@ def _make_vector(
             "prep": prep,
             "clean_basic": clean_basic,
             "utility": utility,
+            "vintage_street": vintage_street,
         },
         "silhouette": {
             "structured": structured,
@@ -316,3 +318,64 @@ class TestSystemPromptGuidance:
         prompt = build_system_prompt(profile, "")
 
         assert "suggested brands" not in prompt.lower()
+
+
+# ── Tests for vintage_street cultural reference ──────────────────────────────
+
+class TestVintageStreetCulturalRef:
+    """vintage_street dimension returns vintage-appropriate brands, keywords, and system prompt label."""
+
+    def test_vintage_street_brands_returned(self):
+        from services.style_translator import translate_style_vector
+
+        vector = _make_vector(vintage_street=1.0, primary_cultural_ref="vintage_street")
+        result = translate_style_vector(vector)
+
+        brands_lower = [b.lower() for b in result["suggested_brands"]]
+        assert any(
+            kw in " ".join(brands_lower)
+            for kw in ["champion", "levi", "carhartt", "supreme", "dickies"]
+        ), f"Expected vintage streetwear brands, got {result['suggested_brands']}"
+
+    def test_vintage_street_keywords_returned(self):
+        from services.style_translator import translate_style_vector
+
+        vector = _make_vector(vintage_street=1.0, primary_cultural_ref="vintage_street")
+        result = translate_style_vector(vector)
+
+        keywords_lower = [kw.lower() for kw in result["search_keywords"]]
+        assert any(
+            kw in " ".join(keywords_lower)
+            for kw in ["vintage", "90s", "retro", "thrifted"]
+        ), f"Expected vintage keywords, got {result['search_keywords']}"
+
+    def test_vintage_street_differs_from_sport_street_brands(self):
+        from services.style_translator import translate_style_vector
+
+        sport = translate_style_vector(_make_vector(sport_street=1.0, primary_cultural_ref="sport_street"))
+        vintage = translate_style_vector(_make_vector(vintage_street=1.0, primary_cultural_ref="vintage_street"))
+
+        assert set(sport["suggested_brands"]) != set(vintage["suggested_brands"]), (
+            "vintage_street and sport_street should produce different brand recommendations"
+        )
+
+    def test_vintage_street_label_in_system_prompt(self):
+        from agent.system_prompt import build_system_prompt
+
+        profile = {
+            "style_vector": {
+                "energy": 0.5,
+                "cultural_ref": {
+                    "sport_street": 0.0, "prep": 0.0, "clean_basic": 0.0,
+                    "utility": 0.0, "vintage_street": 1.0,
+                },
+                "silhouette": {"structured": 0.0, "relaxed": 0.5, "oversized": 0.5},
+                "color": {"temperature": 0.0, "range": 0.5, "expression": 0.5},
+                "primary_cultural_ref": "vintage_street",
+                "occasions": ["casual"],
+            },
+            "style_adjectives": {},
+        }
+        prompt = build_system_prompt(profile, "")
+
+        assert "Vintage" in prompt, "System prompt should display 'Vintage/Streetwear' label for vintage_street"
