@@ -72,7 +72,7 @@ def _neutral_vector() -> dict:
     """Return a neutral baseline vector."""
     return {
         "energy": 0.5,
-        "cultural_ref": {"sport_street": 0.0, "prep": 0.0, "clean_basic": 0.0, "utility": 0.0},
+        "cultural_ref": {"sport_street": 0.0, "prep": 0.0, "clean_basic": 0.0, "utility": 0.0, "vintage_street": 0.0},
         "silhouette": {"structured": 0.0, "relaxed": 0.0, "oversized": 0.0},
         "color": {"temperature": 0.0, "range": 0.5, "expression": 0.5},
         "primary_cultural_ref": "none",
@@ -85,7 +85,7 @@ def compute_feedback_vector(feedback_rows: list[dict]) -> dict:
     if not feedback_rows:
         return _neutral_vector()
 
-    cultural_accum: dict[str, float] = {"sport_street": 0.0, "prep": 0.0, "clean_basic": 0.0, "utility": 0.0}
+    cultural_accum: dict[str, float] = {"sport_street": 0.0, "prep": 0.0, "clean_basic": 0.0, "utility": 0.0, "vintage_street": 0.0}
     color_temp_accum = 0.0
     silhouette_accum: dict[str, float] = {"structured": 0.0, "relaxed": 0.0, "oversized": 0.0}
     count = 0

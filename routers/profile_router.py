@@ -179,6 +179,7 @@ def _vector_to_tags(vector: dict) -> list[str]:
         "prep": ["classic", "refined"],
         "clean_basic": ["clean", "basic", "minimal"],
         "utility": ["workwear", "functional"],
+        "vintage_street": ["vintage", "retro"],
     }
     tags.extend(tag_map.get(primary, []))
 

@@ -50,7 +50,7 @@ def _quiz_vector(**overrides):
     """Build a base quiz-style vector."""
     base = {
         "energy": 0.5,
-        "cultural_ref": {"sport_street": 0.0, "prep": 0.0, "clean_basic": 0.0, "utility": 0.0},
+        "cultural_ref": {"sport_street": 0.0, "prep": 0.0, "clean_basic": 0.0, "utility": 0.0, "vintage_street": 0.0},
         "silhouette": {"structured": 0.3, "relaxed": 0.4, "oversized": 0.3},
         "color": {"temperature": 0.0, "range": 0.5, "expression": 0.5},
         "primary_cultural_ref": "none",
@@ -85,6 +85,20 @@ class TestExtractCulturalSignal:
         signal = _extract_cultural_signal(product)
         total = sum(signal.values())
         assert total == 0
+
+    def test_champion_maps_to_vintage_street(self):
+        from services.vector_refinement import _extract_cultural_signal
+
+        product = {"seller": "Champion", "product_title": "Champion Vintage Hoodie"}
+        signal = _extract_cultural_signal(product)
+        assert signal.get("vintage_street", 0) > 0
+
+    def test_supreme_maps_to_vintage_street(self):
+        from services.vector_refinement import _extract_cultural_signal
+
+        product = {"seller": "Supreme", "product_title": "Supreme Box Logo Tee"}
+        signal = _extract_cultural_signal(product)
+        assert signal.get("vintage_street", 0) > 0
 
 
 # ── Tests for color signal extraction ────────────────────────────────────────
@@ -142,6 +156,12 @@ class TestComputeFeedbackVector:
         result = compute_feedback_vector([])
         assert result["energy"] == 0.5
         assert all(v == 0.0 for v in result["cultural_ref"].values())
+
+    def test_neutral_vector_includes_vintage_street(self):
+        from services.vector_refinement import compute_feedback_vector
+
+        result = compute_feedback_vector([])
+        assert "vintage_street" in result["cultural_ref"]
 
     def test_likes_produce_positive_signal(self):
         from services.vector_refinement import compute_feedback_vector

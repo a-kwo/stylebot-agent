@@ -287,6 +287,7 @@ def translate_style_vector(style_vector: dict | None) -> dict:
         "prep": "old-money/prep",
         "clean_basic": "clean basic",
         "utility": "workwear/utility",
+        "vintage_street": "vintage/streetwear",
     }.get(primary_ref, primary_ref)
 
     energy_label = {"low": "understated", "mid": "balanced", "high": "expressive"}.get(

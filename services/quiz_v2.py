@@ -8,7 +8,7 @@ Structure:
 
 Each answer updates a score vector across four dimension axes:
   energy       — 0.0 (quiet/understated) to 1.0 (expressive/loud)
-  cultural_ref — weights across sport_street, prep, clean_basic, utility
+  cultural_ref — weights across sport_street, prep, clean_basic, utility, vintage_street
   silhouette   — weights for structured, relaxed, oversized
   color        — temperature (-1 cool to 1 warm), range, expression level
 

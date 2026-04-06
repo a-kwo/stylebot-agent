@@ -89,3 +89,27 @@ class TestComputeStyleVector:
         assert vector["silhouette"]["relaxed"] == 0.0
         assert vector["color"]["range"] == 0.5
         assert vector["primary_cultural_ref"] == "none"
+
+    def test_vintage_street_in_default_vector(self):
+        """Default vector should include vintage_street in cultural_ref."""
+        vector = compute_style_vector([], [])
+        assert "vintage_street" in vector["cultural_ref"]
+
+
+class TestVectorToTags:
+    """Tests for _vector_to_tags in profile_router."""
+
+    def test_vintage_street_tags(self):
+        from routers.profile_router import _vector_to_tags
+
+        vector = {
+            "energy": 0.5,
+            "primary_cultural_ref": "vintage_street",
+            "cultural_ref": {"vintage_street": 1.0},
+            "silhouette": {"structured": 0.0, "relaxed": 0.5, "oversized": 0.5},
+            "color": {"temperature": 0.0, "range": 0.5, "expression": 0.5},
+        }
+        tags = _vector_to_tags(vector)
+        assert any(t in tags for t in ["vintage", "retro"]), (
+            f"vintage_street primary ref should produce vintage/retro tags, got: {tags}"
+        )

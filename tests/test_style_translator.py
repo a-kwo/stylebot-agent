@@ -379,3 +379,13 @@ class TestVintageStreetCulturalRef:
         prompt = build_system_prompt(profile, "")
 
         assert "Vintage" in prompt, "System prompt should display 'Vintage/Streetwear' label for vintage_street"
+
+    def test_vintage_street_summary_label(self):
+        from services.style_translator import translate_style_vector
+
+        vector = _make_vector(vintage_street=1.0, primary_cultural_ref="vintage_street")
+        result = translate_style_vector(vector)
+        summary = result.get("summary", "")
+        assert "vintage" in summary.lower(), (
+            f"Summary should contain 'vintage' label, got: {summary}"
+        )
