@@ -44,9 +44,9 @@ QUESTIONS = {
         "subtitle": "Pick the energy level you gravitate toward",
         "options": [
             {
-                "id": "quiet",
+                "id": "understated",
                 "label": "Understated",
-                "image_url": "/static/quiz_images/v2__q1__quiet.jpg",
+                "image_url": "/static/quiz_images/v2__q1__understated.jpg",
                 "vector_scores": {"energy": 0.15},
             },
             {
@@ -73,7 +73,7 @@ QUESTIONS = {
             {
                 "id": "vintage_street",
                 "label": "Vintage/Streetwear",
-                "image_url": "/static/quiz_images/v2_q2_vintage-streetwear.jpg",
+                "image_url": "/static/quiz_images/v2__q2__vintage-streetwear.jpg",
                 "vector_scores": {"cultural_ref.vintage_street": 1.0},
             },
             {
