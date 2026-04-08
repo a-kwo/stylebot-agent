@@ -389,3 +389,15 @@ class TestVintageStreetCulturalRef:
         assert "vintage" in summary.lower(), (
             f"Summary should contain 'vintage' label, got: {summary}"
         )
+
+    def test_vintage_street_avoid_keywords_exclude_streetwear(self):
+        """'streetwear' from sport_street should not appear in avoids when vintage_street is active."""
+        from services.style_translator import translate_style_vector
+
+        vector = _make_vector(vintage_street=0.75, energy=0.217, primary_cultural_ref="vintage_street")
+        result = translate_style_vector(vector)
+
+        avoid_lower = [kw.lower() for kw in result["avoid_keywords"]]
+        assert not any(
+            "streetwear" in kw for kw in avoid_lower
+        ), f"'streetwear' must not appear in avoid_keywords when vintage_street is active, got: {result['avoid_keywords']}"

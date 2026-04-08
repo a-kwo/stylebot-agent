@@ -243,13 +243,20 @@ def translate_style_vector(style_vector: dict | None) -> dict:
     elif energy > 0.7:
         avoid_keywords = ["plain basics", "muted tones only"]
 
-    # Add avoids based on absent cultural refs
+    # Add avoids based on absent cultural refs, but skip any keyword that
+    # overlaps with the active refs' own keywords (e.g. "streetwear" ⊂ "vintage streetwear")
+    active_kw_words: set[str] = set()
+    for kw in keywords:
+        active_kw_words.update(kw.lower().split())
+
     absent_refs = set(CULTURAL_REF_KEYWORDS.keys()) - set(active_refs.keys())
     for ref in absent_refs:
-        # Add a couple avoids from absent cultures
         ref_kw = CULTURAL_REF_KEYWORDS.get(ref, [])
         if ref_kw:
-            avoid_keywords.append(ref_kw[0])
+            candidate = ref_kw[0]
+            candidate_words = set(candidate.lower().split())
+            if not candidate_words.intersection(active_kw_words):
+                avoid_keywords.append(candidate)
 
     # ── Silhouette → fit guidance ────────────────────────────────────────
     silhouette = style_vector.get("silhouette", {})
