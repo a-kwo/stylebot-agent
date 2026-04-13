@@ -167,16 +167,23 @@ Color temperature: {temp:.2f} ({temp_label}), range: {color.get('range', 0.5):.2
     guidance_section = ""
     if style_vector and style_vector.get("primary_cultural_ref", "none") != "none":
         guidance = translate_style_vector(style_vector)
-        if guidance["suggested_brands"]:
+        if guidance.get("aesthetic_brief"):
             guidance_section = f"""
 ## Search Guidance (from style profile)
-- Suggested brands: {', '.join(guidance['suggested_brands'])}
-- Search keywords: {', '.join(guidance['search_keywords'])}
+
+**Aesthetic Brief** — use this as your creative direction when forming search queries:
+{guidance['aesthetic_brief']}
+
+When calling search_products:
+- Reason from this brief to form specific, descriptive queries (e.g., "heavyweight washed graphic tee 90s" not just "vintage tee")
+- Vary item types, colors, and price points across different search calls in a session — don't search the same category or colorway twice unless explicitly asked
+- Don't inject brand names into queries mechanically — let the aesthetic guide what you search for; only name a brand when it uniquely matches the brief
+
+Reference context (for brand/keyword ideas, not for direct use in queries):
+- Brands aligned with this style: {', '.join(guidance['suggested_brands'])}
 - Materials: {', '.join(guidance['material_preferences'])}
-- Avoid in searches: {', '.join(guidance['avoid_keywords'])}
 - Fit: {guidance['fit_guidance']}
-- Color: {guidance['color_guidance']}
-- Summary: {guidance['summary']}"""
+- Color: {guidance['color_guidance']}"""
 
     # Parse style quiz answers
     style_quiz_raw = profile.get("style_quiz", "[]")
