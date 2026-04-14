@@ -250,7 +250,8 @@ class TestTranslateStyleVector:
             kw in keywords_str for kw in ["bold", "statement", "graphic", "loud"]
         ), f"Expected bold/statement keywords for high energy, got: {result['search_keywords']}"
 
-    def test_low_energy_adds_understated_keywords(self):
+    def test_low_energy_reflected_in_aesthetic_brief(self):
+        # Energy modifiers are expressed through the aesthetic_brief, not as keyword prefixes.
         from services.style_translator import translate_style_vector
 
         vector = _make_vector(
@@ -258,12 +259,11 @@ class TestTranslateStyleVector:
         )
         result = translate_style_vector(vector)
 
-        keywords_lower = [kw.lower() for kw in result["search_keywords"]]
-        keywords_str = " ".join(keywords_lower)
+        brief = result.get("aesthetic_brief", "").lower()
         assert any(
-            kw in keywords_str
+            kw in brief
             for kw in ["understated", "minimal", "quiet", "subtle", "clean"]
-        ), f"Expected understated keywords for low energy, got: {result['search_keywords']}"
+        ), f"Expected understated tone in aesthetic_brief for low energy, got: {brief}"
 
     def test_summary_is_nonempty_string(self):
         from services.style_translator import translate_style_vector
@@ -401,3 +401,92 @@ class TestVintageStreetCulturalRef:
         assert not any(
             "streetwear" in kw for kw in avoid_lower
         ), f"'streetwear' must not appear in avoid_keywords when vintage_street is active, got: {result['avoid_keywords']}"
+
+
+# ── Tests for aesthetic brief ────────────────────────────────────────────────
+
+class TestAestheticBrief:
+    """translate_style_vector() returns aesthetic_brief key with rich prose."""
+
+    def test_translate_style_vector_returns_aesthetic_brief_key(self):
+        from services.style_translator import translate_style_vector
+
+        vector = _make_vector(vintage_street=1.0, primary_cultural_ref="vintage_street")
+        result = translate_style_vector(vector)
+        assert "aesthetic_brief" in result, "Result must contain aesthetic_brief key"
+        assert isinstance(result["aesthetic_brief"], str)
+
+    def test_vintage_street_brief_contains_vintage_specific_language(self):
+        from services.style_translator import translate_style_vector
+
+        vector = _make_vector(vintage_street=1.0, primary_cultural_ref="vintage_street", energy=0.5)
+        result = translate_style_vector(vector)
+        brief = result["aesthetic_brief"].lower()
+        vintage_terms = ["heavyweight", "90s", "worn", "washed", "collegiate", "flea market", "levi"]
+        assert any(t in brief for t in vintage_terms), \
+            f"Brief should contain vintage-specific language, got: {brief}"
+
+    def test_low_energy_brief_reflects_quieter_tone(self):
+        from services.style_translator import translate_style_vector
+
+        vector = _make_vector(vintage_street=1.0, primary_cultural_ref="vintage_street", energy=0.1)
+        result = translate_style_vector(vector)
+        brief = result["aesthetic_brief"].lower()
+        quiet_terms = ["quiet", "muted", "nothing loud", "understated", "plain"]
+        assert any(t in brief for t in quiet_terms), \
+            f"Low-energy brief should reflect quieter tone, got: {brief}"
+
+    def test_high_energy_brief_reflects_bolder_tone(self):
+        from services.style_translator import translate_style_vector
+
+        vector = _make_vector(sport_street=1.0, primary_cultural_ref="sport_street", energy=0.9)
+        result = translate_style_vector(vector)
+        brief = result["aesthetic_brief"].lower()
+        bold_terms = ["bold", "loud", "statement", "expressive", "eye-catching"]
+        assert any(t in brief for t in bold_terms), \
+            f"High-energy brief should reflect bolder tone, got: {brief}"
+
+    def test_aesthetic_brief_nonempty_for_all_cultures(self):
+        from services.style_translator import translate_style_vector
+
+        cultures = ["vintage_street", "sport_street", "prep", "clean_basic", "utility"]
+        for culture in cultures:
+            kw = {culture: 1.0}
+            vector = _make_vector(**kw, primary_cultural_ref=culture)
+            result = translate_style_vector(vector)
+            assert result.get("aesthetic_brief"), f"Brief empty for culture: {culture}"
+
+
+# ── Additional system prompt tests ───────────────────────────────────────────
+
+class TestSystemPromptAestheticGuidance:
+    """build_system_prompt includes aesthetic brief and diversity directive."""
+
+    def _sport_street_profile(self):
+        return {
+            "style_vector": {
+                "energy": 0.6,
+                "cultural_ref": {
+                    "sport_street": 0.8, "prep": 0.0,
+                    "clean_basic": 0.0, "utility": 0.0, "vintage_street": 0.0,
+                },
+                "silhouette": {"structured": 0.2, "relaxed": 0.6, "oversized": 0.2},
+                "color": {"temperature": 0.1, "range": 0.5, "expression": 0.5},
+                "primary_cultural_ref": "sport_street",
+                "occasions": ["casual"],
+            },
+            "style_adjectives": {},
+        }
+
+    def test_system_prompt_includes_aesthetic_brief(self):
+        from agent.system_prompt import build_system_prompt
+
+        prompt = build_system_prompt(self._sport_street_profile(), "")
+        assert "Aesthetic Brief" in prompt, "System prompt must include 'Aesthetic Brief' heading"
+
+    def test_system_prompt_includes_diversity_directive(self):
+        from agent.system_prompt import build_system_prompt
+
+        prompt = build_system_prompt(self._sport_street_profile(), "")
+        assert "vary" in prompt.lower() or "different" in prompt.lower(), \
+            "System prompt must include a diversity directive for search calls"

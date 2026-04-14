@@ -225,29 +225,6 @@ def _enhance_query(
                 f"Warning: '{brand}' is in the user's avoided brands list. Consider alternative brands."
             )
 
-    # Append preferred brands if no brand already in query
-    preferred_brands = profile.get("preferred_brands", [])
-    if isinstance(preferred_brands, str):
-        try:
-            preferred_brands = json.loads(preferred_brands)
-        except Exception:
-            preferred_brands = []
-    if isinstance(preferred_brands, dict):
-        # Sort by weight descending for priority
-        preferred_brands = sorted(preferred_brands.keys(), key=lambda b: preferred_brands[b], reverse=True)
-    if preferred_brands:
-        # Check if query already contains any known brand (preferred, avoided, or common)
-        from services.style_translator import CULTURAL_REF_BRANDS
-        known_brands = list(preferred_brands) + list(avoided_brands)
-        for brand_list in CULTURAL_REF_BRANDS.values():
-            known_brands.extend(brand_list)
-        query_lower = query.lower()
-        has_brand = any(b.lower() in query_lower for b in known_brands if b)
-        if not has_brand:
-            # Append top 1-2 preferred brands
-            top_brands = preferred_brands[:2]
-            enhanced_query = f"{enhanced_query} {' '.join(top_brands)}"
-
     # Append fit preference if not already present
     fit_preferences = profile.get("fit_preferences", [])
     if isinstance(fit_preferences, str):

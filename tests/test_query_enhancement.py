@@ -25,15 +25,17 @@ class TestEnhanceQuery:
 
         assert len(result["warnings"]) > 0
 
-    def test_preferred_brands_appended_to_generic_query(self):
+    def test_preferred_brands_not_auto_appended_to_generic_query(self):
+        """Preferred brands should be reference context only — not auto-injected into queries.
+        Claude reads brand preferences from the system prompt and decides when to use them."""
         from agent.tool_handlers import _enhance_query
 
         profile = {"avoided_brands": [], "preferred_brands": ["COS", "Arket"], "fit_preferences": []}
         result = _enhance_query("navy blazer", profile, None, None)
 
         query_lower = result["query"].lower()
-        assert "cos" in query_lower or "arket" in query_lower, \
-            f"Expected preferred brand in query, got: {result['query']}"
+        assert "cos" not in query_lower and "arket" not in query_lower, \
+            f"Preferred brands should not be auto-appended to queries, got: {result['query']}"
 
     def test_preferred_brands_not_appended_when_brand_in_query(self):
         """Don't append preferred brands if the query already mentions a brand."""

@@ -89,6 +89,36 @@ ENERGY_MODIFIERS: dict[str, list[str]] = {
     "high": ["bold", "statement", "graphic", "loud", "eye-catching"],
 }
 
+# ── Cultural reference → aesthetic briefs (per energy band) ──────────────────
+
+CULTURAL_REF_AESTHETIC_BRIEFS: dict[str, dict[str, str]] = {
+    "vintage_street": {
+        "low":  "Early 90s American casual worn quietly — heavyweight Champion hoodies in muted tones, washed Levi's 501s, plain boxy collegiate tees with small logos. Nothing loud. Pieces look secondhand and lived-in.",
+        "mid":  "Early 90s American sportswear with real character — heavyweight Champion fleece, washed Levi's, boxy graphic tees from old sports teams, canvas Carhartt worn casually. Flea market energy, not fast fashion vintage.",
+        "high": "Bold 90s archive energy — oversized Champion reverse weave, loud old-stock sports graphics, beat-up vintage Nike or New Balance, washed-out denim. Deadstock feel, worn loud and proud.",
+    },
+    "sport_street": {
+        "low":  "Clean, modern athletic-influenced streetwear — pared-back Nike or New Balance with minimal branding, monochrome track pants, plain hoodies. No loud graphics.",
+        "mid":  "Contemporary streetwear with athletic DNA — Nike, Jordan, or Stussy silhouettes, graphic hoodies, joggers, clean sneakers. Urban and confident.",
+        "high": "Statement streetwear — bold colorways, graphic-heavy hoodies, Palace or Jordan drops, eye-catching sneakers. Loud and intentional.",
+    },
+    "prep": {
+        "low":  "Understated prep — clean OCBD shirts, slim chinos, unobtrusive loafers, minimal branding. Old-money quiet.",
+        "mid":  "Classic American prep — Ralph Lauren polos, well-fitted chinos, blazers, boat shoes. Traditional but not stiff.",
+        "high": "Bold prep — color-blocked blazers, loud Polo graphics, statement accessories. Preppy energy turned up.",
+    },
+    "clean_basic": {
+        "low":  "Quiet minimalism — Uniqlo or COS in neutral tones, simple cuts, no visible branding. The goal is near-invisibility.",
+        "mid":  "Refined basics — Uniqlo, COS, or Everlane essentials in versatile colors, clean silhouettes, functional simplicity.",
+        "high": "Intentional minimalism with a statement — bold neutral color blocking, architectural cuts, considered accessories.",
+    },
+    "utility": {
+        "low":  "Understated workwear — plain Carhartt canvas, simple Dickies, clean boots. Functional and quiet.",
+        "mid":  "Heritage workwear — Carhartt WIP or Filson canvas, cargo pants, field jackets, rugged boots. Worn but deliberate.",
+        "high": "Bold utility — statement field jackets, heavy-duty cargo silhouettes, striking boots. Workwear as a look.",
+    },
+}
+
 # ── Silhouette → fit guidance ────────────────────────────────────────────────
 
 SILHOUETTE_FIT_MAP: dict[str, str] = {
@@ -234,7 +264,6 @@ def translate_style_vector(style_vector: dict | None) -> dict:
         energy_band = "mid"
 
     energy_keywords = ENERGY_MODIFIERS.get(energy_band, [])
-    keywords = energy_keywords + keywords  # prepend energy keywords
 
     # ── Avoid keywords (opposite energy) ─────────────────────────────────
     avoid_keywords: list[str] = []
@@ -307,6 +336,18 @@ def translate_style_vector(style_vector: dict | None) -> dict:
         f"{color_info['guidance'].split('—')[0].strip()}."
     )
 
+    # ── Aesthetic brief ──────────────────────────────────────────────────────
+    aesthetic_brief = CULTURAL_REF_AESTHETIC_BRIEFS.get(primary_ref, {}).get(energy_band, "")
+    secondary_label_map = {
+        "sport_street": "sport/street", "prep": "prep", "clean_basic": "clean basic",
+        "utility": "workwear/utility", "vintage_street": "vintage/streetwear",
+    }
+    secondary_labels = [
+        secondary_label_map.get(r, r) for r in active_refs if r != primary_ref
+    ]
+    if secondary_labels:
+        aesthetic_brief += f" Secondary influences: {', '.join(secondary_labels)}."
+
     return {
         "search_keywords": keywords,
         "suggested_brands": brands,
@@ -315,4 +356,5 @@ def translate_style_vector(style_vector: dict | None) -> dict:
         "fit_guidance": fit_guidance,
         "color_guidance": color_guidance,
         "summary": summary,
+        "aesthetic_brief": aesthetic_brief,
     }
