@@ -35,3 +35,10 @@ images/
 # Next.js build output
 frontend/.next/
 frontend/node_modules/
+frontend/out/
+
+# Internal planning notes
+Notes/
+
+# Server logs
+*.log
